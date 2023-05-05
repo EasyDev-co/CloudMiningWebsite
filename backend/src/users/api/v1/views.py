@@ -33,3 +33,21 @@ class CustomUserViewSet(UserViewSet):
             )
 
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def me(self):
+        pass
+
+    def activation(self):
+        pass
+
+    def resend_activation(self):
+        pass
+
+    def reset_username(self):
+        pass
+
+    def reset_username_confirm(self):
+        pass
+
+    def set_username(self):
+        pass
