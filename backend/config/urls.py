@@ -3,7 +3,7 @@ from django.urls import path, include
 from django.conf.urls.static import static
 
 from config.components.swagger import schema_view
-from config.components.statick import MEDIA_URL, MEDIA_ROOT
+from config.components.static import MEDIA_URL, MEDIA_ROOT
 from config import settings
 
 urlpatterns = [

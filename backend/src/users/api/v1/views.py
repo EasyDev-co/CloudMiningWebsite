@@ -5,21 +5,11 @@ from rest_framework.views import APIView
 from rest_framework.pagination import PageNumberPagination
 from src.users.api.v1.serializers import CreateUserSerializer
 from djoser.views import UserViewSet
-from djoser.email import PasswordResetEmail
-from django.contrib.auth.models import User
 from djoser.compat import get_user_email
 from djoser.conf import settings
 from rest_framework.decorators import action
 from rest_framework.routers import DefaultRouter
-
-
-def send_reset_password_email(context, email):
-    try:
-        context['user'] = User.objects.get(id=context.get('user_id'))
-        PasswordResetEmail(context=context).send(email)
-    except Exception as exc:
-        print('Ошибка')
-        # raise self.retry(exc=exc, countdown=60)
+from src.users.tasks import send_reset_password_email
 
 
 class CustomUserViewSet(UserViewSet):
@@ -32,7 +22,7 @@ class CustomUserViewSet(UserViewSet):
         user = serializer.get_user()
         print('Это моя функция')
         if user:
-            send_reset_password_email(
+            send_reset_password_email.delay(
                 {
                     'user_id': user.id,
                     'domain': request.get_host(),
