@@ -92,8 +92,8 @@ DJOSER = {
     'SEND_ACTIVATION_EMAIL': False,
     'SERIALIZERS': {
         'user_create': 'src.users.api.v1.serializers.CreateUserSerializer',
-        'token': 'src.users.api.v1.serializers.TokenCreateSerializer',
-    },
+        'password_reset_confirm': 'src.users.api.v1.serializers.ResetPasswordSerializer',
+    }
 }
 
 

@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 from django.core import exceptions as django_exceptions
 from rest_framework.settings import api_settings
-from djoser.serializers import UserCreateMixin
+from djoser.serializers import UserCreateMixin, UidAndTokenSerializer
 
 
 class CreateUserSerializer(UserCreateMixin, serializers.ModelSerializer):
@@ -44,3 +44,32 @@ class CreateUserSerializer(UserCreateMixin, serializers.ModelSerializer):
                 "password_confirm": 'The passwords entered do not match'
             }
         )
+
+
+class PasswordSerializer(serializers.Serializer):
+    new_password = serializers.CharField(style={"input_type": "password"})
+    repeat_new_password = serializers.CharField(style={"input_type": "password"})
+
+    def validate(self, attrs):
+        new_password = attrs.get("new_password")
+        repeat_new_password = attrs.get('repeat_new_password')
+        if new_password == repeat_new_password:
+            user = getattr(self, "user", None) or self.context["request"].user
+            # why assert? There are ValidationError / fail everywhere
+            assert user is not None
+
+            try:
+                validate_password(attrs["new_password"], user)
+            except django_exceptions.ValidationError:
+                raise serializers.Validation
+            return super().validate(attrs)
+        raise serializers.ValidationError(
+            {
+                "new_password": 'The passwords entered do not match',
+                "repeat_new_password": 'The passwords entered do not match'
+            }
+        )
+
+
+class ResetPasswordSerializer(UidAndTokenSerializer, PasswordSerializer):
+    pass
