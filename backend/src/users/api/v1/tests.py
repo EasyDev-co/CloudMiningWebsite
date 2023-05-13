@@ -93,17 +93,4 @@ class UserTestCase(CreateUsersTestCase):
     #    )
 
     def test_create_token(self):
-        users = self.users
-        for key, user in users.items():
-            user_data = {
-                'username': user.get('username'),
-                'password': user.get('password')
-            }
-            response = self.client.post(
-                path=reverse('jwt-create'),
-                data=user_data
-            )
-            auth_user = response.json()
-            self.assertEqual(response.status_code, 200)
-            self.users[key].update({'token': auth_user.get('access')})
-            self.assertEqual(['refresh', 'access'], list(auth_user.keys()))
+        self.create_token()
