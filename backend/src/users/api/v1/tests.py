@@ -1,10 +1,10 @@
 from faker import Faker
 from djoser.email import PasswordResetEmail
+from django.urls import reverse
 from rest_framework.response import Response
-from django.contrib.auth.models import User
 from src.tests import CreateUsersTestCase
 from src.users.api.v1.views import CustomUserViewSet
-from django.urls import reverse
+from src.users.models import User
 
 
 fake = Faker()
@@ -105,27 +105,29 @@ class UserTestCase(CreateUsersTestCase):
             'A user with that username already exists.'
         )
 
-    # def test_create_user_with_exist_email(self):
-    #     profile = fake.simple_profile()
-    #     username = profile.get('username')
-    #     email = self.users.get('user_2').get('email')
-    #     password = fake.password()
-    #     new_user = {
-    #         'username': username,
-    #         'email': email,
-    #         'password': password,
-    #         'password_confirm': password
-    #     }
-    #     response = self.client.post(
-    #         path=reverse('user-list'),
-    #         data=new_user
-    #     )
-    #     new_user = response.json()
-    #     print(new_user)
-    #     self.assertEqual(response.status_code, 400)
-    #     self.assertEqual(
-    #         new_user.get('username')[0], 'A user with that username already exists.'
-    #    )
+    def test_create_user_with_exist_email(self):
+        """Testing the creation of a user with an existing email"""
+
+        profile = fake.simple_profile()
+        username = profile.get('username')
+        email = self.users.get('user_2').get('email')
+        password = fake.password()
+        new_user = {
+            'username': username,
+            'email': email,
+            'password': password,
+            'password_confirm': password
+        }
+        response = self.client.post(
+            path=reverse('user-list'),
+            data=new_user
+        )
+        new_user = response.json()
+        print(new_user)
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            new_user.get('email')[0], 'A user with that email already exists.'
+        )
 
     def test_create_token(self):
         """Testing token generation"""

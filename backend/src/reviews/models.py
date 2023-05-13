@@ -1,5 +1,5 @@
 from django.db import models
-from django.contrib.auth.models import User
+from src.users.models import User
 
 
 class Review(models.Model):
@@ -11,8 +11,8 @@ class Review(models.Model):
     author = models.ForeignKey(
         User,
         verbose_name='Автор отзыва',
-        on_delete=models.SET_DEFAULT,
-        default='Пользователь удален',
+        on_delete=models.SET_NULL,
+        null=True,
         related_name='created_by'
     )
     text = models.TextField(verbose_name='Текст')

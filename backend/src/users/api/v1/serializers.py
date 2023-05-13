@@ -1,9 +1,9 @@
 from rest_framework import serializers
-from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 from django.core import exceptions as django_exceptions
 from rest_framework.settings import api_settings
 from djoser.serializers import UserCreateMixin, UidAndTokenSerializer
+from src.users.models import User
 
 
 class CreateUserSerializer(UserCreateMixin, serializers.ModelSerializer):
