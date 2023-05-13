@@ -25,16 +25,3 @@ class ReviewsSerializer(serializers.ModelSerializer):
             'text',
             'created_at',
         ]
-
-
-# class AddReviewSerializer(serializers.ModelSerializer):
-#     author = serializers.SlugRelatedField('username', read_only=True)
-
-#     class Meta:
-#         model = Review
-#         fields = [
-#             'id',
-#             'author',
-#             'text',
-#             'created_at',
-#         ]

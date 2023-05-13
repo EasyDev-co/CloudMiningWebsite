@@ -12,3 +12,6 @@ flower:
 
 celery:
 	poetry run celery -A config worker -l info
+
+test:
+	poetry run python manage.py test

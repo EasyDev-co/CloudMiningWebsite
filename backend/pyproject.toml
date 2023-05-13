@@ -25,6 +25,7 @@ flower = "^1.2.0"
 
 [tool.poetry.group.dev.dependencies]
 autopep8 = "^2.0.2"
+faker = "^18.7.0"
 
 [build-system]
 requires = ["poetry-core"]
