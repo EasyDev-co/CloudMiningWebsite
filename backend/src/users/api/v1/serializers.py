@@ -60,8 +60,8 @@ class PasswordSerializer(serializers.Serializer):
 
             try:
                 validate_password(attrs["new_password"], user)
-            except django_exceptions.ValidationError:
-                raise serializers.Validation
+            except django_exceptions.ValidationError as e:
+                raise serializers.ValidationError({"new_password": list(e.messages)})
             return super().validate(attrs)
         raise serializers.ValidationError(
             {

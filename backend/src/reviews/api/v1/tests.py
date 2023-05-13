@@ -7,10 +7,6 @@ from django.urls import reverse
 fake = Faker()
 
 
-def search(id, lst):
-    return next((a for a in lst if a['author']['username'] == id), None)
-
-
 class ReviewTestCase(CreateUsersTestCase):
 
     def setUp(self):
@@ -20,15 +16,16 @@ class ReviewTestCase(CreateUsersTestCase):
 
     def test_create_reviews_and_get_all_reviews(self):
         users = self.users
-        for user in users.values():
+        for key, user in users.items():
             token = user.get('token')
-            text = fake.text()
+            text = fake.text(max_nb_chars=60)
             auth_data = {
                 'Authorization': f'Bearer {token}'
             }
             review_data = {
                 'text': text
             }
+
             response = self.client.post(
                 path=reverse('review-add'),
                 headers=auth_data,
@@ -41,6 +38,7 @@ class ReviewTestCase(CreateUsersTestCase):
             self.assertEqual(new_review.get(
                 'author').get('email'), user.get('email'))
             self.assertEqual(new_review.get('text'), text)
+            self.users[key].update({'text': text})
 
         reviews = Review.objects.all()
         for review in reviews:
@@ -53,4 +51,4 @@ class ReviewTestCase(CreateUsersTestCase):
         self.assertEqual(all_reviews.get('count'), len(users))
         for user in users.values():
             self.assertContains(response, text=user.get('username'), count=1)
-            self.assertContains(response, text=text, count=1)
+            self.assertContains(response, text=user.get('text'), count=1)
