@@ -1,6 +1,8 @@
 from rest_framework import serializers
-from src.users.models import User
 from src.reviews.models import Review
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 
 class ShowAuthorSerializer(serializers.ModelSerializer):

@@ -23,7 +23,7 @@ class CustomUserViewSet(UserViewSet):
                 },
                 [get_user_email(user)]
             )
-
+            return Response(data='Email sent', status=status.HTTP_200_OK)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     def me(self):

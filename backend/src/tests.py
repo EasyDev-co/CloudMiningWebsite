@@ -2,7 +2,9 @@ from faker import Faker
 from django.urls import reverse
 from django.test import TestCase
 from django.contrib.auth.hashers import make_password
-from src.users.models import User
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 
 fake = Faker()
