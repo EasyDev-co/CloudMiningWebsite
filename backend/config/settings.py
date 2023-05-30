@@ -23,6 +23,10 @@ include(
     'components/db.py'
 )
 
+include(
+    'components/celery_settings.py'
+)
+
 
 include(
     'components/auth.py'
@@ -34,7 +38,7 @@ include(
 )
 
 include(
-    'components/statick.py'
+    'components/static.py'
 )
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

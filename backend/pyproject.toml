@@ -17,7 +17,15 @@ djangorestframework = "^3.14.0"
 python-dotenv = "^1.0.0"
 djangorestframework-simplejwt = "^5.2.2"
 django-filter = "^23.2"
+djoser = "^2.2.0"
+celery = "^5.2.7"
+redis = "^4.5.4"
+flower = "^1.2.0"
 
+
+[tool.poetry.group.dev.dependencies]
+autopep8 = "^2.0.2"
+faker = "^18.7.0"
 
 [build-system]
 requires = ["poetry-core"]
