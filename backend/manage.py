@@ -9,6 +9,7 @@ from config.settings import (
 
 
 def check_smtp_settings():
+    """Проверяет переданные ли данные для отправки сообщений польщователю"""
     smtp_lst = [EMAIL_HOST_PASSWORD, EMAIL_HOST_USER]
     if not all(smtp_lst):
         raise Exception('Не указаны переменные окружения: EMAIL_HOST_PASSWORD, EMAIL_HOST_USER')

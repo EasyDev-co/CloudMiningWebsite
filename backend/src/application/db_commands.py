@@ -1,28 +1,33 @@
-from src.application.models import Difficulty, Reward
+from src.application.models import Difficulty, Reward, MaintenanceCost
+from django.shortcuts import get_object_or_404
 
 
 def change_or_create_difficulty(difficulty: int):
-    diff = Difficulty.objects.first()
-    if diff:
-        diff.difficulty = difficulty
-        diff.save()
-    else:
-        Difficulty.objects.create(difficulty=difficulty)
+    Difficulty.objects.update_or_create(
+        id='difficulty', defaults={'difficulty': difficulty}
+    )
 
 
 def change_or_create_reward(reward: int):
     reward_block = round((reward / (10 ** (len(str(reward)) - 1))), 2)
-    rew = Reward.objects.first()
-    if rew:
-        rew.reward_block = reward_block
-        rew.save()
-    else:
-        Reward.objects.create(reward_block=reward_block)
+    Reward.objects.update_or_create(
+        id='reward_block', defaults={'reward_block': reward_block}
+    )
 
 
 def get_difficulty():
-    return Difficulty.objects.first()
+    return get_object_or_404(
+        Difficulty, id='difficulty'
+    )
 
 
 def get_reward_block():
-    return Reward.objects.first()
+    return get_object_or_404(
+        Reward, id='reward_block'
+    )
+
+
+def get_maintenance_coast():
+    return get_object_or_404(
+        MaintenanceCost, id='maintenance_cost'
+    )

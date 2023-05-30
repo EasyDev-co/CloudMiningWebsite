@@ -1,3 +1,11 @@
 from django.contrib import admin
+from src.application.models import MaintenanceCost
 
-# Register your models here.
+
+@admin.register(MaintenanceCost)
+class MaintenanceCostAdmin(admin.ModelAdmin):
+    list_display = (
+        'id',
+        'coast'
+    )
+    readonly_fields = ['id']

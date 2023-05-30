@@ -6,9 +6,13 @@ User = get_user_model()
 
 
 class ShowAuthorSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(read_only=True)
+    username = serializers.CharField(read_only=True)
+    email = serializers.CharField(read_only=True)
+
     class Meta:
         model = User
-        
+
         fields = [
             'id',
             'username',
