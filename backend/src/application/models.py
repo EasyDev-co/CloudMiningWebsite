@@ -45,6 +45,17 @@ class MaintenanceCost(models.Model):
     )
 
 
+class BtcPrice(models.Model):
+    class Meta:
+        verbose_name = 'стоимость btc (в usd)'
+        verbose_name = 'Данные о стоимости биткоина (в usd)'
+    id = models.CharField(primary_key=True, max_length=20, default='btc_price')
+    price = models.FloatField(
+        verbose_name='Стоимость',
+        default=0
+    )
+
+
 class Contract(models.Model):
     class Meta:
         verbose_name = 'контракт'
