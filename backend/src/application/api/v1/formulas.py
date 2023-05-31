@@ -1,7 +1,8 @@
 from src.application.db_commands import (
     get_reward_block_or_404,
     get_difficulty_or_404,
-    get_maintenance_coast_or_404
+    get_maintenance_coast_or_404,
+    get_btc_price_or_404
 )
 
 
@@ -16,6 +17,6 @@ def calculate_income_btc(mining_period: int, btc_amount: float = 1):
 def calculate_income_usd(btc_amount: float, mining_period: int):
     D = calculate_income_btc(mining_period)
     C = btc_amount
-    B = 27939.3  # нужно парсить Binance
+    B = get_btc_price_or_404()
     S = get_maintenance_coast_or_404()
-    return (D * C * B) - (S.coast * C)
+    return (D * C * B.price) - (S.coast * C)

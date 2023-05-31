@@ -45,6 +45,6 @@ def get_maintenance_coast_or_404():
 
 
 def get_btc_price_or_404():
-    return get_btc_price_or_404(
+    return get_object_or_404(
         BtcPrice, id='btc_price'
     )
