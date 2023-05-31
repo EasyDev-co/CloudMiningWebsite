@@ -15,3 +15,16 @@ class CreateContractSerizalizer(serializers.ModelSerializer):
             'contract_start',
             'contract_end'
         ]
+
+
+class GetAllContractsSerizalizer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Contract
+
+        fields = [
+            'id',
+            'hashrate',
+            'contract_start',
+            'contract_end'
+        ]

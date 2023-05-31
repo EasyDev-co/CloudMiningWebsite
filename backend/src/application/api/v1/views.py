@@ -2,11 +2,21 @@ from rest_framework import generics, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from src.application.api.v1.serializers import CreateContractSerizalizer
+from rest_framework.pagination import PageNumberPagination
+from src.application.api.v1.serializers import (
+    CreateContractSerizalizer,
+    GetAllContractsSerizalizer
+)
 from src.application.api.v1.formulas import (
     calculate_income_btc, calculate_income_usd
 )
 from src.application.models import Contract
+
+
+class APIListPagination(PageNumberPagination):
+    page_size = 20
+    page_size_query_param = 'page_size'
+    max_page_size = 30
 
 
 class CreateContractView(generics.CreateAPIView):
@@ -29,6 +39,20 @@ class CreateContractView(generics.CreateAPIView):
             status=status.HTTP_201_CREATED,
             headers=headers
         )
+
+
+class GetAllContractsView(generics.ListAPIView):
+    serializer_class = GetAllContractsSerizalizer
+    pagination_class = APIListPagination
+    permission_classes = [
+        IsAuthenticated,
+    ]
+
+    def get_queryset(self):
+        queryset = Contract._default_manager.filter(
+            customer=self.request.user.id
+            )
+        return queryset
 
 
 class GetDailyIncomeView(APIView):
