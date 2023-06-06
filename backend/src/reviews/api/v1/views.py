@@ -13,6 +13,7 @@ class ReviewsListPagination(PageNumberPagination):
 
 
 class AddReviewView(generics.CreateAPIView):
+    """Добавление отзыва"""
     serializer_class = ReviewsSerializer
     permission_classes = [
         IsAuthenticated,
@@ -35,6 +36,7 @@ class AddReviewView(generics.CreateAPIView):
 
 
 class AllReviewsView(generics.ListAPIView):
+    """Вывод всех отзывов, одобренных администратором"""
     serializer_class = ReviewsSerializer
     pagination_class = ReviewsListPagination
 

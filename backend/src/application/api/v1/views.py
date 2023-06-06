@@ -20,6 +20,7 @@ class APIListPagination(PageNumberPagination):
 
 
 class CreateContractView(generics.CreateAPIView):
+    """Создание нового контракта для пользователя"""
     serializer_class = CreateContractSerizalizer
     permission_classes = [
         IsAuthenticated,
@@ -42,6 +43,7 @@ class CreateContractView(generics.CreateAPIView):
 
 
 class GetAllContractsView(generics.ListAPIView):
+    """Выводит список всех контрактов пользователя"""
     serializer_class = GetAllContractsSerizalizer
     pagination_class = APIListPagination
     permission_classes = [
@@ -56,6 +58,7 @@ class GetAllContractsView(generics.ListAPIView):
 
 
 class GetDailyIncomeView(APIView):
+    """Просмотр ежедневного дохода по контракту"""
     permission_classes = [
         IsAuthenticated,
     ]
