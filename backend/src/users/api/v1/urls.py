@@ -24,6 +24,7 @@ urlpatterns = [
     path('activation/<token>/', UserActivationAccountView.as_view(), name='activation'),
     path('activation/resend/<email>/', ResendActivationAccountEmailView.as_view(), name='resend_activation'),
     path('login/', UserLoginView.as_view(), name='login'),
+    path('password/reset/<uidb64>/<token>/', CheckTokenForResetPasswordView.as_view(), name='confirm_for_reset_password'),
     path('password/reset/', ResetPasswordView.as_view(), name='send_email_for_reset' ),
-    path('password/confirm/<uidb64>/<token>/', CheckTokenForResetPasswordView.as_view(), name='confirm_for_reset_password')
+    
 ]

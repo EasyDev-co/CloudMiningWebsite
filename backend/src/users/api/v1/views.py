@@ -11,6 +11,7 @@ from src.users.api.v1.serializers import (
     ResendActivationAccountEmailSerializer,
     LoginUserSerializer,
     SendResetPasswordEmailSerializer,
+    CheckTokenForResetPasswordSerializer
 )
 from src.users.tasks import send_email_for_user
 from src.users.utils import (
@@ -104,5 +105,10 @@ class ResetPasswordView(generics.GenericAPIView):
 
 
 class CheckTokenForResetPasswordView(generics.GenericAPIView):
-    def get(self, request, uidb64: str, token: str):
-        pass
+    serializer_class = CheckTokenForResetPasswordSerializer
+
+    def put(self, request, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        print(serializer.data)
+        return Response(status=status.HTTP_204_NO_CONTENT)

@@ -190,18 +190,28 @@ class SendResetPasswordEmailSerializer(serializers.ModelSerializer):
 class CheckTokenForResetPasswordSerializer(serializers.ModelSerializer):
     uidb64 = serializers.CharField(write_only=True)
     token = serializers.CharField(write_only=True)
+    password = serializers.CharField(
+        style={"input_type": "password"}, write_only=True
+    )
+    password_confirm = serializers.CharField(
+        style={"input_type": "password"}, write_only=True
+    )
 
     class Meta:
         model = User
-        fields = ['uidb64', 'token']
+        fields = ['uidb64', 'token', 'password', 'password_confirm']
 
     def validate(self, attrs):
-        valideted_data = super().validate(attrs)
+        validated_data = super().validate(attrs)
         uidb64 = attrs.get('uidb64', '')
         token = attrs.get('token', '')
+        password: str = attrs.get("password", '')
+        password_confirm: str = attrs.get("password_confirm", '')
+        attrs.pop('password_confirm')
         try:
             uid = force_str(urlsafe_base64_decode(uidb64))
             user = self.Meta.model.objects.get(pk=uid)
+            print(user)
         except (
             TypeError,
             ValueError,
@@ -212,7 +222,27 @@ class CheckTokenForResetPasswordSerializer(serializers.ModelSerializer):
             raise exceptions.AuthenticationFailed(
                 detail={'uid': 'An uid is not valid'}
             )
-        if PasswordResetTokenGenerator.check_token(user, token):
+        if not PasswordResetTokenGenerator().check_token(user, token):
             raise exceptions.AuthenticationFailed(
                 detail={'token': 'A token is not valid'}
             )
+        print(password, password_confirm)
+        if password == password_confirm:
+            try:
+                validate_password(password, user)
+            except django_exceptions.ValidationError as e:
+                serializer_error = serializers.as_serializer_error(e)
+                raise serializers.ValidationError(
+                    {"password": serializer_error[
+                        api_settings.NON_FIELD_ERRORS_KEY
+                    ]
+                    }
+                )
+
+            return validated_data
+        raise serializers.ValidationError(
+            {
+                "password": 'The passwords entered do not match',
+                "password_confirm": 'The passwords entered do not match'
+            }
+        )
