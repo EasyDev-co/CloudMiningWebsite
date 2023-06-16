@@ -1,5 +1,3 @@
-import jwt
-from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
@@ -68,7 +66,6 @@ class UserActivationAccountView(APIView):
     def get(self, request, token):
         serializer = self.serializer_class(data={'token': token})
         serializer.is_valid(raise_exception=True)
-        print(serializer.data)
         user = User.objects.get(pk=serializer.data.get('uuid'))
         user.is_confirm = True
         user.save()
