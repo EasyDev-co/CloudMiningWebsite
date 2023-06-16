@@ -74,12 +74,12 @@ class GetDailyIncomeView(APIView):
         contract_end = contract[0].get('contract_end')
         mining_period = int((contract_end - contract_start).total_seconds())
         income_btc = calculate_income_btc(
-            mining_period=mining_period,
+            mining_period=86400,
             btc_amount=hashrate
         )
         income_usd = calculate_income_usd(
             btc_amount=hashrate,
-            mining_period=mining_period
+            mining_period=86400
         )
         return Response(
             data={

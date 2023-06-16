@@ -1,44 +1,85 @@
-from rest_framework import status
+import jwt
+from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_str
+from rest_framework import generics, status
 from rest_framework.response import Response
-from djoser.views import UserViewSet
-from djoser.compat import get_user_email
-from rest_framework.decorators import action
-from src.users.tasks import send_reset_password_email
+from rest_framework.views import APIView
+from src.users.api.v1.serializers import (
+    UserRegisterSerializer,
+    UserActivationAccountSerializer,
+    ResendActivationAccountEmailSerializer,
+    LoginUserSerializer
+)
+from src.users.tasks import send_email_for_user
+from src.users.utils import get_data_for_activation_account_email
+from src.users.api.v1.renderars import UserDataRender
+
+User = get_user_model()
 
 
-class CustomUserViewSet(UserViewSet):
+class UserRegistrationView(generics.GenericAPIView):
 
-    @action(["post"], detail=False)
-    def reset_password(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
+    serializer_class = UserRegisterSerializer
+    renderer_classes = (UserDataRender,)
+
+    def post(self, request):
+        user = request.data
+        serializer = self.serializer_class(data=user)
         serializer.is_valid(raise_exception=True)
-        user = serializer.get_user()
-        if user:
-            send_reset_password_email.delay(
-                {
-                    'user_id': user.id,
-                    'domain': request.get_host(),
-                    'protocol': 'https' if request.is_secure() else 'http',
-                    'site_name': request.get_host()
-                },
-                [get_user_email(user)]
-            )
+        serializer.save()
+        user_data = serializer.data
+        user = User.objects.get(email=user_data.get('email'))
+        data = get_data_for_activation_account_email(
+            user=user,
+            request=request
+        )
+        send_email_for_user.delay(
+            data=data
+        )
+
+        return Response(user_data, status=status.HTTP_201_CREATED)
+
+
+class ResendActivationAccountEmailView(generics.GenericAPIView):
+    serializer_class = ResendActivationAccountEmailSerializer
+    renderer_classes = (UserDataRender,)
+
+    def get(self, request, email):
+        serializer = self.serializer_class(data={'email': email})
+        serializer.is_valid(raise_exception=True)
+        user = User.objects.get(email=serializer.data.get('email'))
+        data = get_data_for_activation_account_email(
+            user=user,
+            request=request
+        )
+        send_email_for_user.delay(
+            data=data
+        )
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    def me(self):
-        pass
 
-    def activation(self):
-        pass
+class UserActivationAccountView(APIView):
+    serializer_class = UserActivationAccountSerializer
+    renderer_classes = (UserDataRender,)
 
-    def resend_activation(self):
-        pass
+    def get(self, request, token):
+        serializer = self.serializer_class(data={'token': token})
+        serializer.is_valid(raise_exception=True)
+        print(serializer.data)
+        user = User.objects.get(pk=serializer.data.get('uuid'))
+        user.is_confirm = True
+        user.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
-    def reset_username(self):
-        pass
 
-    def reset_username_confirm(self):
-        pass
+class UserLoginView(generics.GenericAPIView):
+    serializer_class = LoginUserSerializer
+    renderer_classes = (UserDataRender,)
 
-    def set_username(self):
-        pass
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return Response(data=serializer.data, status=status.HTTP_200_OK)

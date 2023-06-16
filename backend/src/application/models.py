@@ -63,6 +63,7 @@ class Contract(models.Model):
 
     customer = models.ForeignKey(
         User,
+        to_field='uuid',
         verbose_name='Заказчик',
         on_delete=models.CASCADE,
         related_name='is_customer'
