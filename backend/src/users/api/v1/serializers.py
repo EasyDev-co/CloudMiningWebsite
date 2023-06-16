@@ -1,10 +1,14 @@
 import jwt
 from rest_framework import serializers, exceptions
 from django.contrib.auth.password_validation import validate_password
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.core import exceptions as django_exceptions
 from rest_framework.settings import api_settings
 from djoser.serializers import UserCreateMixin, UidAndTokenSerializer
 from django.contrib.auth import get_user_model, authenticate
+from django.utils.encoding import force_bytes, force_str, DjangoUnicodeDecodeError
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+
 from django.core.validators import EmailValidator
 from django.conf import settings
 
@@ -30,7 +34,7 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         password: str = attrs.get("password", '')
         password_confirm: str = attrs.get("password_confirm", '')
         attrs.pop('password_confirm')
-        user = User(**attrs)
+        user = self.Meta.model(**attrs)
 
         if password == password_confirm:
             try:
@@ -92,9 +96,9 @@ class ResendActivationAccountEmailSerializer(serializers.ModelSerializer):
         email = attrs.get('email', '')
         try:
             user = self.Meta.model.objects.get(email=email)
-        except User.DoesNotExist:
+        except self.Meta.model.DoesNotExist:
             raise exceptions.NotFound(
-                detail={'user': 'A user does not exist'}
+                detail={'email': 'An email does not exist'}
             )
         if user.is_confirm:
             raise exceptions.NotFound(
@@ -164,5 +168,51 @@ class PasswordSerializer(serializers.Serializer):
         )
 
 
-class ResetPasswordSerializer(UidAndTokenSerializer, PasswordSerializer):
-    pass
+class SendResetPasswordEmailSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(validators=[EmailValidator, ])
+
+    class Meta:
+        model = User
+        fields = ['email', ]
+
+    def validate(self, attrs):
+        validated_data = super().validate(attrs)
+        email = attrs.get('email', '')
+        try:
+            self.Meta.model.objects.get(email=email)
+        except self.Meta.model.DoesNotExist:
+            raise exceptions.NotFound(
+                detail={'email': 'An email does not exist'}
+            )
+        return validated_data
+
+
+class CheckTokenForResetPasswordSerializer(serializers.ModelSerializer):
+    uidb64 = serializers.CharField(write_only=True)
+    token = serializers.CharField(write_only=True)
+
+    class Meta:
+        model = User
+        fields = ['uidb64', 'token']
+
+    def validate(self, attrs):
+        valideted_data = super().validate(attrs)
+        uidb64 = attrs.get('uidb64', '')
+        token = attrs.get('token', '')
+        try:
+            uid = force_str(urlsafe_base64_decode(uidb64))
+            user = self.Meta.model.objects.get(pk=uid)
+        except (
+            TypeError,
+            ValueError,
+            OverflowError,
+            self.Meta.model.DoesNotExist,
+            DjangoUnicodeDecodeError
+        ):
+            raise exceptions.AuthenticationFailed(
+                detail={'uid': 'An uid is not valid'}
+            )
+        if PasswordResetTokenGenerator.check_token(user, token):
+            raise exceptions.AuthenticationFailed(
+                detail={'token': 'A token is not valid'}
+            )

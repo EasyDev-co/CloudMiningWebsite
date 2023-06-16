@@ -3,7 +3,9 @@ from src.users.api.v1.views import (
     UserRegistrationView,
     UserActivationAccountView,
     ResendActivationAccountEmailView,
-    UserLoginView
+    UserLoginView,
+    ResetPasswordView,
+    CheckTokenForResetPasswordView,
 )
 from django.contrib.auth import get_user_model
 from rest_framework.routers import DefaultRouter
@@ -20,6 +22,8 @@ urlpatterns = [
     # re_path(r'^auth/', include('djoser.urls.jwt'))
     path('register/', UserRegistrationView.as_view(), name='register'),
     path('activation/<token>/', UserActivationAccountView.as_view(), name='activation'),
-    path('activation/resend/<email>', ResendActivationAccountEmailView.as_view(), name='resend_activation'),
-    path('login/', UserLoginView.as_view(), name='login')
+    path('activation/resend/<email>/', ResendActivationAccountEmailView.as_view(), name='resend_activation'),
+    path('login/', UserLoginView.as_view(), name='login'),
+    path('password/reset/', ResetPasswordView.as_view(), name='send_email_for_reset' ),
+    path('password/confirm/<uidb64>/<token>/', CheckTokenForResetPasswordView.as_view(), name='confirm_for_reset_password')
 ]

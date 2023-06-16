@@ -9,10 +9,14 @@ from src.users.api.v1.serializers import (
     UserRegisterSerializer,
     UserActivationAccountSerializer,
     ResendActivationAccountEmailSerializer,
-    LoginUserSerializer
+    LoginUserSerializer,
+    SendResetPasswordEmailSerializer,
 )
 from src.users.tasks import send_email_for_user
-from src.users.utils import get_data_for_activation_account_email
+from src.users.utils import (
+    get_data_for_activation_account_email,
+    get_data_for_reset_password_email
+)
 from src.users.api.v1.renderars import UserDataRender
 
 User = get_user_model()
@@ -80,3 +84,25 @@ class UserLoginView(generics.GenericAPIView):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         return Response(data=serializer.data, status=status.HTTP_200_OK)
+
+
+class ResetPasswordView(generics.GenericAPIView):
+    serializer_class = SendResetPasswordEmailSerializer
+
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = User.objects.get(email=serializer.data.get('email'))
+        data = get_data_for_reset_password_email(
+            user=user,
+            request=request
+        )
+        send_email_for_user.delay(
+            data=data
+        )
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class CheckTokenForResetPasswordView(generics.GenericAPIView):
+    def get(self, request, uidb64: str, token: str):
+        pass
