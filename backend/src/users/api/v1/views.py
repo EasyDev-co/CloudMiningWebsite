@@ -110,5 +110,5 @@ class CheckTokenForResetPasswordView(generics.GenericAPIView):
     def put(self, request, **kwargs):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
-        print(serializer.data)
+        print('data', serializer.data)
         return Response(status=status.HTTP_204_NO_CONTENT)

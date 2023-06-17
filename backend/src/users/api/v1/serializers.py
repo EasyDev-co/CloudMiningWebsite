@@ -191,18 +191,18 @@ class CheckTokenForResetPasswordSerializer(serializers.ModelSerializer):
     uidb64 = serializers.CharField(write_only=True)
     token = serializers.CharField(write_only=True)
     password = serializers.CharField(
-        style={"input_type": "password"}, write_only=True
+        style={"input_type": "password"}
     )
     password_confirm = serializers.CharField(
         style={"input_type": "password"}, write_only=True
     )
+    uuid = serializers.CharField(read_only=True)
 
     class Meta:
         model = User
-        fields = ['uidb64', 'token', 'password', 'password_confirm']
+        fields = ['uidb64', 'token', 'password', 'password_confirm', 'uuid']
 
     def validate(self, attrs):
-        validated_data = super().validate(attrs)
         uidb64 = attrs.get('uidb64', '')
         token = attrs.get('token', '')
         password: str = attrs.get("password", '')
@@ -211,7 +211,6 @@ class CheckTokenForResetPasswordSerializer(serializers.ModelSerializer):
         try:
             uid = force_str(urlsafe_base64_decode(uidb64))
             user = self.Meta.model.objects.get(pk=uid)
-            print(user)
         except (
             TypeError,
             ValueError,
@@ -226,7 +225,6 @@ class CheckTokenForResetPasswordSerializer(serializers.ModelSerializer):
             raise exceptions.AuthenticationFailed(
                 detail={'token': 'A token is not valid'}
             )
-        print(password, password_confirm)
         if password == password_confirm:
             try:
                 validate_password(password, user)
@@ -238,7 +236,8 @@ class CheckTokenForResetPasswordSerializer(serializers.ModelSerializer):
                     ]
                     }
                 )
-
+            validated_data = super().validate(attrs)
+            validated_data['uuid'] = uid
             return validated_data
         raise serializers.ValidationError(
             {

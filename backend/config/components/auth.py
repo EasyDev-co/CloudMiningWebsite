@@ -5,6 +5,8 @@ from datetime import timedelta
 
 AUTH_PWD_MODULE = "django.contrib.auth.password_validation."
 
+PASSWORD_RESET_TIMEOUT = 60
+
 
 AUTH_PASSWORD_VALIDATORS = [
     {
