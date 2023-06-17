@@ -4,10 +4,9 @@ from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.core import exceptions as django_exceptions
 from rest_framework.settings import api_settings
-from djoser.serializers import UserCreateMixin, UidAndTokenSerializer
 from django.contrib.auth import get_user_model, authenticate
-from django.utils.encoding import force_bytes, force_str, DjangoUnicodeDecodeError
-from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_str, DjangoUnicodeDecodeError
+from django.utils.http import urlsafe_base64_decode
 
 from django.core.validators import EmailValidator
 from django.conf import settings
@@ -127,8 +126,7 @@ class LoginUserSerializer(serializers.ModelSerializer):
         if not user:
             raise exceptions.ValidationError(
                 detail={
-                    "new_password": 'Invalid credential',
-                    "repeat_new_password": 'Invalid credential'
+                    "new_password": 'Invalid credential'
                 }
             )
         if not user.is_confirm:
@@ -137,35 +135,6 @@ class LoginUserSerializer(serializers.ModelSerializer):
             )
         validated_data['tokens'] = user.tokens
         return validated_data
-
-
-class PasswordSerializer(serializers.Serializer):
-    new_password = serializers.CharField(style={"input_type": "password"})
-    repeat_new_password = serializers.CharField(
-        style={"input_type": "password"})
-    user = serializers
-
-    def validate(self, attrs):
-        validated_data = super().validate(attrs)
-        new_password = attrs.get("new_password")
-        repeat_new_password = attrs.get('repeat_new_password')
-        if new_password == repeat_new_password:
-            user = getattr(self, "user", None) or self.context["request"].user
-            # why assert? There are ValidationError / fail everywhere
-            assert user is not None
-
-            try:
-                validate_password(attrs["new_password"], user)
-            except django_exceptions.ValidationError as e:
-                raise serializers.ValidationError(
-                    {"new_password": list(e.messages)})
-            return validated_data
-        raise serializers.ValidationError(
-            {
-                "new_password": 'The passwords entered do not match',
-                "repeat_new_password": 'The passwords entered do not match'
-            }
-        )
 
 
 class SendResetPasswordEmailSerializer(serializers.ModelSerializer):
@@ -188,46 +157,23 @@ class SendResetPasswordEmailSerializer(serializers.ModelSerializer):
 
 
 class CheckTokenForResetPasswordSerializer(serializers.ModelSerializer):
-    uidb64 = serializers.CharField(write_only=True)
-    token = serializers.CharField(write_only=True)
     password = serializers.CharField(
         style={"input_type": "password"}
     )
     password_confirm = serializers.CharField(
         style={"input_type": "password"}, write_only=True
     )
-    uuid = serializers.CharField(read_only=True)
 
     class Meta:
         model = User
-        fields = ['uidb64', 'token', 'password', 'password_confirm', 'uuid']
+        fields = ['password', 'password_confirm']
 
     def validate(self, attrs):
-        uidb64 = attrs.get('uidb64', '')
-        token = attrs.get('token', '')
         password: str = attrs.get("password", '')
         password_confirm: str = attrs.get("password_confirm", '')
-        attrs.pop('password_confirm')
-        try:
-            uid = force_str(urlsafe_base64_decode(uidb64))
-            user = self.Meta.model.objects.get(pk=uid)
-        except (
-            TypeError,
-            ValueError,
-            OverflowError,
-            self.Meta.model.DoesNotExist,
-            DjangoUnicodeDecodeError
-        ):
-            raise exceptions.AuthenticationFailed(
-                detail={'uid': 'An uid is not valid'}
-            )
-        if not PasswordResetTokenGenerator().check_token(user, token):
-            raise exceptions.AuthenticationFailed(
-                detail={'token': 'A token is not valid'}
-            )
         if password == password_confirm:
             try:
-                validate_password(password, user)
+                validate_password(password, self.Meta.model)
             except django_exceptions.ValidationError as e:
                 serializer_error = serializers.as_serializer_error(e)
                 raise serializers.ValidationError(
@@ -237,7 +183,6 @@ class CheckTokenForResetPasswordSerializer(serializers.ModelSerializer):
                     }
                 )
             validated_data = super().validate(attrs)
-            validated_data['uuid'] = uid
             return validated_data
         raise serializers.ValidationError(
             {
@@ -245,3 +190,13 @@ class CheckTokenForResetPasswordSerializer(serializers.ModelSerializer):
                 "password_confirm": 'The passwords entered do not match'
             }
         )
+
+    def update(self, instance, validated_data):
+        print(validated_data)
+        instance.set_password(validated_data.get('password'))
+        instance.save()
+        return instance
+
+
+class ChangeUserFirstNameSerializer(serializers.ModelSerializer):
+    pass

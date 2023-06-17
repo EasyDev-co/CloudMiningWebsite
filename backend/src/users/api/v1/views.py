@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
-from django.utils.encoding import force_bytes, force_str
+from django.utils.encoding import force_bytes, force_str, DjangoUnicodeDecodeError
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -19,6 +19,7 @@ from src.users.utils import (
     get_data_for_reset_password_email
 )
 from src.users.api.v1.renderars import UserDataRender
+from rest_framework.throttling import AnonRateThrottle
 
 User = get_user_model()
 
@@ -49,6 +50,7 @@ class UserRegistrationView(generics.GenericAPIView):
 class ResendActivationAccountEmailView(generics.GenericAPIView):
     serializer_class = ResendActivationAccountEmailSerializer
     renderer_classes = (UserDataRender,)
+    throttle_classes = (AnonRateThrottle,)
 
     def get(self, request, email):
         serializer = self.serializer_class(data={'email': email})
@@ -89,6 +91,7 @@ class UserLoginView(generics.GenericAPIView):
 
 class ResetPasswordView(generics.GenericAPIView):
     serializer_class = SendResetPasswordEmailSerializer
+    throttle_classes = (AnonRateThrottle,)
 
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
@@ -108,7 +111,45 @@ class CheckTokenForResetPasswordView(generics.GenericAPIView):
     serializer_class = CheckTokenForResetPasswordSerializer
 
     def put(self, request, **kwargs):
-        serializer = self.serializer_class(data=request.data)
+        uidb64 = kwargs.get('uidb64', '')
+        token = kwargs.get('token', '')
+        try:
+            uid = force_str(urlsafe_base64_decode(uidb64))
+            user = User.objects.get(pk=uid)
+        except (
+            TypeError,
+            ValueError,
+            OverflowError,
+            self.Meta.model.DoesNotExist,
+            DjangoUnicodeDecodeError
+        ):
+            return Response(data={'uuid': 'An uuid is not valid'}, status=status.HTTP_401_UNAUTHORIZED)
+        if not PasswordResetTokenGenerator().check_token(user, token):
+            return Response(data={'token': 'A token is not valid'}, status=status.HTTP_401_UNAUTHORIZED)
+        try:
+            user = User.objects.get(uuid=uid)
+        except User.DoesNotExist:
+            return Response(data={'token': 'A token is not valid'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = self.serializer_class(data=request.data, instance=user)
         serializer.is_valid(raise_exception=True)
-        print('data', serializer.data)
+        serializer.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
+    
+
+# нужно написать еще эндпоинты
+
+# изменение имени
+class ChangeUserFirstNameView(generics.GenericAPIView):
+    pass
+# изменение фамилии
+class ChangeUserSecondNameView(generics.GenericAPIView):
+    pass
+# изменение номера
+class ChangeUserPhoneNumberView(generics.GenericAPIView):
+    pass
+# изменение пароля
+class ChangeUserPasswordView(generics.GenericAPIView):
+    pass
+# изменение почты
+class ChangeUserEmailView(generics.GenericAPIView):
+    pass

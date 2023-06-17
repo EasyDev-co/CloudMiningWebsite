@@ -5,7 +5,7 @@ from datetime import timedelta
 
 AUTH_PWD_MODULE = "django.contrib.auth.password_validation."
 
-PASSWORD_RESET_TIMEOUT = 60
+PASSWORD_RESET_TIMEOUT = 300
 
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -46,6 +46,9 @@ REST_FRAMEWORK = {
     'DEFAULT_FILTER_BACKENDS': [
         'django_filters.rest_framework.DjangoFilterBackend'
     ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '1/minute'
+    }
 }
 
 
