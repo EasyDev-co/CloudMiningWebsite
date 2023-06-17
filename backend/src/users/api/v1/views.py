@@ -16,7 +16,8 @@ from src.users.api.v1.serializers import (
     ChangeUserFirstNameSerializer,
     ChangeUserLastNameSerializer,
     ChangeUserPhoneNumberSerializer,
-    ChangeUserPasswordSerializer
+    ChangeUserPasswordSerializer,
+    ChangeUserEmailViewSerializer
 )
 from src.users.tasks import send_email_for_user
 from src.users.utils import (
@@ -141,7 +142,7 @@ class CheckTokenForResetPasswordView(generics.GenericAPIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
-    
+
 
 class ChangeUserFirstNameView(generics.GenericAPIView):
     serializer_class = ChangeUserFirstNameSerializer
@@ -190,6 +191,21 @@ class ChangeUserPasswordView(generics.GenericAPIView):
         serializer.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-# изменение почты
+
 class ChangeUserEmailView(generics.GenericAPIView):
-    pass
+    serializer_class = SendResetPasswordEmailSerializer
+    throttle_classes = (AnonRateThrottle,)
+    renderer_classes = (UserDataRender,)
+
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = User.objects.get(email=serializer.data.get('email'))
+        data = get_data_for_reset_password_email(
+            user=user,
+            request=request
+        )
+        send_email_for_user.delay(
+            data=data
+        )
+        return Response(status=status.HTTP_204_NO_CONTENT)

@@ -2,8 +2,9 @@ from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import PageNumberPagination
-from src.reviews.api.v1.serializers import ReviewsSerializer
+from src.reviews.api.v1.serializers import ReviewsSerializer, AddReviewForAnonymousAndWithoutDataUsersSerializer, AddReviewForAuthenticatedUsersWithDataSerializer
 from src.reviews.models import Review
+from django.contrib.auth.models import AnonymousUser
 
 
 class ReviewsListPagination(PageNumberPagination):
@@ -14,15 +15,12 @@ class ReviewsListPagination(PageNumberPagination):
 
 class AddReviewView(generics.CreateAPIView):
     """Добавление отзыва"""
-    serializer_class = ReviewsSerializer
-    permission_classes = [
-        IsAuthenticated,
-    ]
 
     def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(
-            data=request.data
-        )
+        if request.user.is_anonymous:
+            serializer = AddReviewForAnonymousAndWithoutDataUsersSerializer(
+                data=request.data
+            )
         serializer.is_valid(raise_exception=True)
         serializer.save(
             author=request.user

@@ -1,13 +1,11 @@
 import jwt
 from rest_framework import serializers, exceptions
 from django.contrib.auth.password_validation import validate_password
-from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.core import exceptions as django_exceptions
 from rest_framework.settings import api_settings
 from django.contrib.auth import get_user_model, authenticate
 from django.core.validators import RegexValidator
-from django.utils.encoding import force_str, DjangoUnicodeDecodeError
-from django.utils.http import urlsafe_base64_decode
+
 
 from django.core.validators import EmailValidator
 from django.conf import settings
@@ -295,3 +293,20 @@ class ChangeUserPasswordSerializer(serializers.ModelSerializer):
         instance.set_password(validated_data.get('new_password'))
         instance.save()
         return instance
+
+
+class ChangeUserEmailViewSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(validators=[EmailValidator, ])
+
+    class Meta:
+        model = User
+        fields = ['email', ]
+
+    def validate(self, attrs):
+        validated_data = super().validate(attrs)
+        email = attrs.get('email', '')
+        if self.Meta.model.objects.filter(email=email).exists():
+            raise exceptions.ValidationError(
+                detail={'email': 'An email is already exist'}
+            )
+        return validated_data

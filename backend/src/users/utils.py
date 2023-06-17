@@ -65,3 +65,25 @@ def get_data_for_reset_password_email(
         'email_body': email_body,
         'email_recipient': (user.email,)
     }
+
+
+def get_data_for_add_new_email_for_user_email(
+        user: User,
+        request: Request
+):
+    uidb64 = urlsafe_base64_encode(force_bytes(user.uuid))
+    token = PasswordResetTokenGenerator().make_token(user)
+    current_site = get_current_site(request=request)
+    email_body = render_to_string('change_email.html',
+                                  {
+                                      'user': user,
+                                      'protocol': 'https' if request.is_secure() else 'http',
+                                      'domain': current_site.domain,
+                                      'token': token,
+                                      'uidb64': uidb64
+                                  })
+    return {
+        'email_subject': 'You change email',
+        'email_body': email_body,
+        'email_recipient': (user.email,)
+    }

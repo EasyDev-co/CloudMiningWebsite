@@ -1,0 +1,7 @@
+{% autoescape off %}  
+Здравствуйте, {{ user.username }},  
+Чтобы подтвердить смену почты, перейдите по ссылке:  
+{{ protocol }}://{{ domain }}{% url 'activation' token=token %}
+
+Если вы не хотите менять почту — проигнорируйте это письмо.
+{% endautoescape %}  
