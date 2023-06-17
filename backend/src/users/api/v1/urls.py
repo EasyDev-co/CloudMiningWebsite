@@ -6,7 +6,10 @@ from src.users.api.v1.views import (
     UserLoginView,
     ResetPasswordView,
     CheckTokenForResetPasswordView,
-    ChangeUserFirstNameView
+    ChangeUserFirstNameView,
+    ChangeUserLastNameView,
+    ChangeUserPhoneNumberView,
+    ChangeUserPasswordView
 )
 from django.contrib.auth import get_user_model
 from rest_framework.routers import DefaultRouter
@@ -27,5 +30,9 @@ urlpatterns = [
     path('login/', UserLoginView.as_view(), name='login'),
     path('reset-password/<uidb64>/<token>/', CheckTokenForResetPasswordView.as_view(), name='confirm_for_reset_password'),
     path('reset-password/', ResetPasswordView.as_view(), name='send_email_for_reset'),
-    path('change/first_name/', ChangeUserFirstNameView.as_view(), name='change_first_name')
+    path('change/first_name/', ChangeUserFirstNameView.as_view(), name='change_first_name'),
+    path('change/last_name/', ChangeUserLastNameView.as_view(), name='change_last_name'),
+    path('change/phone_number/', ChangeUserPhoneNumberView.as_view(), name='change_phone_number'),
+    path('change/password/', ChangeUserPasswordView.as_view(), name='change_password'),
+
 ]

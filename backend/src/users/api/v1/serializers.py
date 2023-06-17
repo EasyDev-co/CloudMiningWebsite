@@ -5,11 +5,13 @@ from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.core import exceptions as django_exceptions
 from rest_framework.settings import api_settings
 from django.contrib.auth import get_user_model, authenticate
+from django.core.validators import RegexValidator
 from django.utils.encoding import force_str, DjangoUnicodeDecodeError
 from django.utils.http import urlsafe_base64_decode
 
 from django.core.validators import EmailValidator
 from django.conf import settings
+from src.users.api.v1.constants import PHONE_NUMBER_PATTERN
 
 User = get_user_model()
 
@@ -201,9 +203,95 @@ class ChangeUserFirstNameSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['first_name', ]
-    
+
+    def update(self, instance, validated_data):
+        instance.first_name = (validated_data.get('first_name'))
+        instance.save()
+        return instance
+
+
+class ChangeUserLastNameSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['last_name', ]
+
     def update(self, instance, validated_data):
         print(validated_data)
-        instance.first_name = (validated_data.get('first_name'))
+        instance.last_name = (validated_data.get('last_name'))
+        instance.save()
+        return instance
+
+
+class ChangeUserPhoneNumberSerializer(serializers.ModelSerializer):
+    phone_number = serializers.CharField(validators=[RegexValidator(
+        regex=PHONE_NUMBER_PATTERN,
+        message='Incorrect phone number. The number must consist of digits'
+    ), ],
+        min_length=8,
+        max_length=15
+    )
+
+    class Meta:
+        model = User
+        fields = ['phone_number', ]
+
+    def validate(self, attrs):
+        phone_number = attrs.get('phone_number')
+        if self.Meta.model.objects.filter(phone_number=phone_number).exists():
+            raise exceptions.ValidationError(
+                detail={'phone_number': 'An current phone number already exists'}
+            )
+        validated_data = super().validate(attrs)
+        return validated_data
+
+    def update(self, instance, validated_data):
+        print(validated_data)
+        instance.phone_number = (validated_data.get('phone_number'))
+        instance.save()
+        return instance
+
+
+class ChangeUserPasswordSerializer(serializers.ModelSerializer):
+    current_password = serializers.CharField(
+        style={"input_type": "password"}, write_only=True
+    )
+    new_password = serializers.CharField(
+        style={"input_type": "password"}, write_only=True
+    )
+    new_password_confirm = serializers.CharField(
+        style={"input_type": "password"}, write_only=True
+    )
+
+    class Meta:
+        model = User
+        fields = ['current_password', 'new_password', 'new_password_confirm']
+
+    def validate(self, attrs):
+        new_password: str = attrs.get("new_password", '')
+        new_password_confirm: str = attrs.get("new_password_confirm", '')
+        if new_password == new_password_confirm:
+            try:
+                validate_password(new_password, self.Meta.model)
+            except django_exceptions.ValidationError as e:
+                serializer_error = serializers.as_serializer_error(e)
+                raise serializers.ValidationError(
+                    {"password": serializer_error[
+                        api_settings.NON_FIELD_ERRORS_KEY
+                    ]
+                    }
+                )
+            validated_data = super().validate(attrs)
+            return validated_data
+        raise serializers.ValidationError(
+            {
+                "new_password": 'The passwords entered do not match',
+                "new_password_confirm": 'The passwords entered do not match'
+            }
+        )
+
+    def update(self, instance, validated_data):
+        if not instance.check_password(validated_data.get('current_password')):
+            raise serializers.ValidationError({"current_password": "Current password is not correct"})
+        instance.set_password(validated_data.get('new_password'))
         instance.save()
         return instance

@@ -13,7 +13,10 @@ from src.users.api.v1.serializers import (
     LoginUserSerializer,
     SendResetPasswordEmailSerializer,
     CheckTokenForResetPasswordSerializer,
-    ChangeUserFirstNameSerializer
+    ChangeUserFirstNameSerializer,
+    ChangeUserLastNameSerializer,
+    ChangeUserPhoneNumberSerializer,
+    ChangeUserPasswordSerializer
 )
 from src.users.tasks import send_email_for_user
 from src.users.utils import (
@@ -94,6 +97,7 @@ class UserLoginView(generics.GenericAPIView):
 class ResetPasswordView(generics.GenericAPIView):
     serializer_class = SendResetPasswordEmailSerializer
     throttle_classes = (AnonRateThrottle,)
+    renderer_classes = (UserDataRender,)
 
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
@@ -111,6 +115,7 @@ class ResetPasswordView(generics.GenericAPIView):
 
 class CheckTokenForResetPasswordView(generics.GenericAPIView):
     serializer_class = CheckTokenForResetPasswordSerializer
+    renderer_classes = (UserDataRender,)
 
     def put(self, request, **kwargs):
         uidb64 = kwargs.get('uidb64', '')
@@ -138,28 +143,53 @@ class CheckTokenForResetPasswordView(generics.GenericAPIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
     
 
-# нужно написать еще эндпоинты
-
-# изменение имени
 class ChangeUserFirstNameView(generics.GenericAPIView):
     serializer_class = ChangeUserFirstNameSerializer
     permission_classes = [IsAuthenticated, ]
+    renderer_classes = (UserDataRender,)
 
     def put(self, request):
-        # user = User.objects.get(uuid=request.user.uuid)
         serializer = self.serializer_class(data=request.data, instance=request.user)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
-# изменение фамилии
-class ChangeUserSecondNameView(generics.GenericAPIView):
-    pass
-# изменение номера
+
+
+class ChangeUserLastNameView(generics.GenericAPIView):
+    serializer_class = ChangeUserLastNameSerializer
+    permission_classes = [IsAuthenticated, ]
+    renderer_classes = (UserDataRender,)
+
+    def put(self, request):
+        serializer = self.serializer_class(data=request.data, instance=request.user)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
 class ChangeUserPhoneNumberView(generics.GenericAPIView):
-    pass
-# изменение пароля
+    serializer_class = ChangeUserPhoneNumberSerializer
+    permission_classes = [IsAuthenticated, ]
+    renderer_classes = (UserDataRender,)
+
+    def put(self, request):
+        serializer = self.serializer_class(data=request.data, instance=request.user)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
 class ChangeUserPasswordView(generics.GenericAPIView):
-    pass
+    serializer_class = ChangeUserPasswordSerializer
+    permission_classes = [IsAuthenticated, ]
+    renderer_classes = (UserDataRender,)
+
+    def put(self, request):
+        serializer = self.serializer_class(data=request.data, instance=request.user)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 # изменение почты
 class ChangeUserEmailView(generics.GenericAPIView):
     pass

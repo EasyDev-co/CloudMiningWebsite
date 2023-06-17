@@ -47,11 +47,11 @@ class User(AbstractUser):
     )
     phone_number = models.CharField(
         _("phone number"),
-        max_length=11,
+        max_length=15,
         blank=True,
         error_messages={
             "unique": _("A user with that phone number already exists."),
-            "max_length": _("A telephone number cannot have more than 11 digits"),
+            "max_length": _("A telephone number cannot have more than 15 digits"),
         }
     )
 
