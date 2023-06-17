@@ -192,11 +192,18 @@ class CheckTokenForResetPasswordSerializer(serializers.ModelSerializer):
         )
 
     def update(self, instance, validated_data):
-        print(validated_data)
         instance.set_password(validated_data.get('password'))
         instance.save()
         return instance
 
 
 class ChangeUserFirstNameSerializer(serializers.ModelSerializer):
-    pass
+    class Meta:
+        model = User
+        fields = ['first_name', ]
+    
+    def update(self, instance, validated_data):
+        print(validated_data)
+        instance.first_name = (validated_data.get('first_name'))
+        instance.save()
+        return instance

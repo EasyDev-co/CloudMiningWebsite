@@ -1,7 +1,8 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
-from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
-from django.utils.encoding import force_bytes, force_str, DjangoUnicodeDecodeError
+from django.utils.http import urlsafe_base64_decode
+from django.utils.encoding import force_str, DjangoUnicodeDecodeError
+from rest_framework.permissions import IsAuthenticated
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -11,7 +12,8 @@ from src.users.api.v1.serializers import (
     ResendActivationAccountEmailSerializer,
     LoginUserSerializer,
     SendResetPasswordEmailSerializer,
-    CheckTokenForResetPasswordSerializer
+    CheckTokenForResetPasswordSerializer,
+    ChangeUserFirstNameSerializer
 )
 from src.users.tasks import send_email_for_user
 from src.users.utils import (
@@ -120,7 +122,7 @@ class CheckTokenForResetPasswordView(generics.GenericAPIView):
             TypeError,
             ValueError,
             OverflowError,
-            self.Meta.model.DoesNotExist,
+            User.DoesNotExist,
             DjangoUnicodeDecodeError
         ):
             return Response(data={'uuid': 'An uuid is not valid'}, status=status.HTTP_401_UNAUTHORIZED)
@@ -140,7 +142,15 @@ class CheckTokenForResetPasswordView(generics.GenericAPIView):
 
 # изменение имени
 class ChangeUserFirstNameView(generics.GenericAPIView):
-    pass
+    serializer_class = ChangeUserFirstNameSerializer
+    permission_classes = [IsAuthenticated, ]
+
+    def put(self, request):
+        # user = User.objects.get(uuid=request.user.uuid)
+        serializer = self.serializer_class(data=request.data, instance=request.user)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 # изменение фамилии
 class ChangeUserSecondNameView(generics.GenericAPIView):
     pass
