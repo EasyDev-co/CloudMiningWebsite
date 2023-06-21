@@ -9,7 +9,9 @@ from src.users.api.v1.views import (
     ChangeUserFirstNameView,
     ChangeUserLastNameView,
     ChangeUserPhoneNumberView,
-    ChangeUserPasswordView
+    ChangeUserPasswordView,
+    ChangeUserEmailView,
+    CheckTokenForChangeUserEmailView
 )
 from django.contrib.auth import get_user_model
 from rest_framework.routers import DefaultRouter
@@ -34,5 +36,6 @@ urlpatterns = [
     path('change/last_name/', ChangeUserLastNameView.as_view(), name='change_last_name'),
     path('change/phone_number/', ChangeUserPhoneNumberView.as_view(), name='change_phone_number'),
     path('change/password/', ChangeUserPasswordView.as_view(), name='change_password'),
-
+    path('change/email/', ChangeUserEmailView.as_view(), name='change_email'),
+    path('change/email/<uidb64>/<token>/', CheckTokenForChangeUserEmailView.as_view(), name='confirm_for_chane_email'),
 ]

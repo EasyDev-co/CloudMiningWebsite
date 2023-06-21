@@ -69,6 +69,7 @@ def get_data_for_reset_password_email(
 
 
 def get_data_for_add_new_email_for_user_email(
+        email: str,
         user: User,
         request: Request
 ):
@@ -86,5 +87,5 @@ def get_data_for_add_new_email_for_user_email(
     return {
         'email_subject': 'You change email',
         'email_body': email_body,
-        'email_recipient': (user.email,)
+        'email_recipient': (email,)
     }

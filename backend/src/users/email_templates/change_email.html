@@ -1,7 +1,7 @@
 {% autoescape off %}  
 Здравствуйте, {{ user.username }},  
 Чтобы подтвердить смену почты, перейдите по ссылке:  
-{{ protocol }}://{{ domain }}{% url 'activation' token=token %}
+{{ protocol }}://{{ domain }}{% url 'confirm_for_chane_email' token=token uidb64=uidb64%}
 
 Если вы не хотите менять почту — проигнорируйте это письмо.
 {% endautoescape %}  

@@ -66,14 +66,10 @@ class User(AbstractUser):
 
 class NewEmail(models.Model):
     email = models.EmailField(
-        _("email address"),
-        unique=True,
-        error_messages={
-            "unique": _("A user with that email already exists."),
-        }
+        _("email address")
     )
     user_uuid = models.ForeignKey(
-        'User',
+        User,
         to_field='uuid',
         on_delete=models.CASCADE
     )

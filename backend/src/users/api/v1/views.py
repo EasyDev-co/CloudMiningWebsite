@@ -22,10 +22,12 @@ from src.users.api.v1.serializers import (
 from src.users.tasks import send_email_for_user
 from src.users.utils import (
     get_data_for_activation_account_email,
-    get_data_for_reset_password_email
+    get_data_for_reset_password_email,
+    get_data_for_add_new_email_for_user_email
 )
 from src.users.api.v1.renderars import UserDataRender
 from rest_framework.throttling import AnonRateThrottle
+from src.users.models import NewEmail
 
 User = get_user_model()
 
@@ -196,19 +198,47 @@ class ChangeUserEmailView(generics.GenericAPIView):
     serializer_class = ChangeUserEmailSerializer
     throttle_classes = (AnonRateThrottle,)
     renderer_classes = (UserDataRender,)
+    permission_classes = [IsAuthenticated, ]
 
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = User.objects.get(email=serializer.data.get('email'))
-        data = get_data_for_reset_password_email(
-            user=user,
+        NewEmail.objects.create(user_uuid_id=request.user.uuid, email=serializer.data.get('email'))
+        data = get_data_for_add_new_email_for_user_email(
+            email=serializer.data.get('email'),
+            user=request.user,
             request=request
         )
         send_email_for_user.delay(
             data=data
         )
         return Response(status=status.HTTP_204_NO_CONTENT)
-    
 
-# тут я пишу класс который будет принимать token пользователя и менять ему email
+
+class CheckTokenForChangeUserEmailView(generics.GenericAPIView):
+    renderer_classes = (UserDataRender,)
+
+    def put(self, request, **kwargs):
+        uidb64 = kwargs.get('uidb64', '')
+        token = kwargs.get('token', '')
+        try:
+            uid = force_str(urlsafe_base64_decode(uidb64))
+            user = User.objects.get(pk=uid)
+        except (
+            TypeError,
+            ValueError,
+            OverflowError,
+            User.DoesNotExist,
+            DjangoUnicodeDecodeError
+        ):
+            return Response(data={'uuid': 'An uuid is not valid'}, status=status.HTTP_401_UNAUTHORIZED)
+        if not PasswordResetTokenGenerator().check_token(user, token):
+            return Response(data={'token': 'A token is not valid'}, status=status.HTTP_401_UNAUTHORIZED)
+        try:
+            new_email = NewEmail.objects.filter(user_uuid_id=user.uuid)
+        except (User.DoesNotExist, NewEmail.DoesNotExist):
+            return Response(data={'token': 'A token is not valid'}, status=status.HTTP_404_NOT_FOUND)
+        user.email = new_email.first().email
+        user.save()
+        new_email.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
