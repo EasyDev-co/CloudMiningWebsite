@@ -3,11 +3,10 @@ from django.contrib.auth import get_user_model
 from django.contrib.sites.shortcuts import get_current_site
 from django.template.loader import render_to_string
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
-from django.contrib.auth.tokens import default_token_generator
 from rest_framework.request import Request
 from rest_framework_simplejwt.tokens import RefreshToken
-from django.utils.encoding import force_bytes, force_str, DjangoUnicodeDecodeError
-from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
 
 
 User = get_user_model()

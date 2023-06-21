@@ -1,41 +1,71 @@
 from faker import Faker
-from djoser.email import PasswordResetEmail
+from rest_framework import status
+from rest_framework_simplejwt.tokens import RefreshToken
 from django.urls import reverse
 from rest_framework.response import Response
 from src.tests import CreateUsersTestCase
-from src.users.models import User
+from django.contrib.auth import get_user_model
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
+from src.users.api.v1.views import (
+    UserRegistrationView,
+    ResendActivationAccountEmailView,
+    ResetPasswordView
+)
+
+
+User = get_user_model()
 
 
 fake = Faker()
 
 
-def test_reset_password(self, request, *args, **kwargs):
-    """The function simulates a password reset procedure
-    without sending an email"""
-
-    serializer = self.get_serializer(data=request.data)
+def post_for_activation_account_email_fake(self, request):
+    user = request.data
+    serializer = self.serializer_class(data=user)
     serializer.is_valid(raise_exception=True)
-    user = serializer.get_user()
-    if user:
-        context = {
-            'user_id': user.id,
-            'domain': request.get_host(),
-            'protocol': 'https' if request.is_secure() else 'http',
-            'site_name': request.get_host()
-        }
-        context['user'] = User.objects.get(id=context.get('user_id'))
-        result = PasswordResetEmail(context=context).get_context_data()
-    return Response(
-        status=200,
-        data={'uid': result.get('uid'),
-              'token': result.get('token')
-              })
+    serializer.save()
+    user_data = serializer.data
+    user = User.objects.get(email=user_data.get('email'))
+    token = RefreshToken.for_user(user).access_token
+    user_data['token'] = str(token)
+    return Response(user_data, status=status.HTTP_201_CREATED)
+
+
+def get_for_activation_account_email_fake(self, request, email):
+    serializer = self.serializer_class(data={'email': email})
+    serializer.is_valid(raise_exception=True)
+    user_data = serializer.data
+    user = User.objects.get(email=serializer.data.get('email'))
+    token = RefreshToken.for_user(user).access_token
+    user_data['token'] = str(token)
+    return Response(data=user_data, status=status.HTTP_201_CREATED)
+
+
+def post_for_reset_password_email_fake(self, request):
+    serializer = self.serializer_class(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    user = User.objects.get(email=serializer.data.get('email'))
+    uidb64 = urlsafe_base64_encode(force_bytes(user.uuid))
+    token = PasswordResetTokenGenerator().make_token(user)
+    data = {
+        'uidb64': uidb64,
+        'token': token
+    }
+    return Response(data=data, status=status.HTTP_201_CREATED)
 
 
 class UserTestCase(CreateUsersTestCase):
-    def test_create_user(self):
-        """Testing user registration"""
 
+    def test_create_user_and_activate_acc(self):
+        """
+        — Создание аккаунта
+        — Активация аккаунта
+        """
+
+        # Monkey patching
+        UserRegistrationView.post = post_for_activation_account_email_fake
         profile = fake.simple_profile()
         password = fake.password()
         username = profile.get('username')
@@ -46,87 +76,176 @@ class UserTestCase(CreateUsersTestCase):
             'password': password,
             'password_confirm': password
         }
+        # Создаем пользователя
         response = self.client.post(
-            path=reverse('user-list'),
+            path=reverse('register'),
             data=new_user
         )
-        new_user = response.json()
+        self.assertIn('data', response.json().keys())
+        new_user = response.json().get('data')
         self.assertEqual(response.status_code, 201)
         self.assertEqual(new_user.get('username'), username)
         self.assertEqual(new_user.get('email'), email)
 
+        # Активируем аккаунт пользователя
+        response = self.client.get(
+            path=reverse('activation', kwargs={'token': new_user.get('token')})
+        )
+        self.assertEqual(response.status_code, 204)
+
+    def test_resend_activation_email(self):
+        """
+        — Создание пользователя
+        — Повторное создание токена для активации акаунта
+        — Активация аккаунта
+        """
+
+        # Monkey patching
+        UserRegistrationView.post = post_for_activation_account_email_fake
+        ResendActivationAccountEmailView.get = get_for_activation_account_email_fake
+        profile = fake.simple_profile()
+        password = fake.password()
+        username = profile.get('username')
+        email = fake.email()
+        new_user = {
+            'username': username,
+            'email': email,
+            'password': password,
+            'password_confirm': password
+        }
+        # Создаем пользователя
+        response = self.client.post(
+            path=reverse('register'),
+            data=new_user
+        )
+        self.assertIn('data', response.json().keys())
+        new_user = response.json().get('data')
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(new_user.get('username'), username)
+        self.assertEqual(new_user.get('email'), email)
+        # Отправляем повторно email для активации
+        response = self.client.get(
+            path=reverse('resend_activation', kwargs={'email': email})
+        )
+        self.assertIn('data', response.json().keys())
+        resend_data = response.json().get('data')
+        self.assertNotEqual(new_user.get('token'), resend_data.get('token'))
+        self.assertEqual(response.status_code, 201)
+        # Активируем аккаунт пользователя
+        response = self.client.get(
+            path=reverse('activation', kwargs={
+                         'token': resend_data.get('token')})
+        )
+        self.assertEqual(response.status_code, 204)
+
     def test_create_user_non_equal_passwords(self):
-        """Testing user registration with unequal passwords"""
+        """Создание аккаунта с разными паролями"""
+        UserRegistrationView.post = post_for_activation_account_email_fake
+        ResendActivationAccountEmailView.get = get_for_activation_account_email_fake
+        profile = fake.simple_profile()
+        password_1 = fake.password()
+        password_2 = fake.password()
+        username = profile.get('username')
+        email = fake.email()
+        new_user = {
+            'username': username,
+            'email': email,
+            'password': password_1,
+            'password_confirm': password_2
+        }
+        # Пытаюсь создать пользователя
+        response = self.client.post(
+            path=reverse('register'),
+            data=new_user
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('errors', response.json().keys())
+        errors = response.json().get('errors')
+        self.assertEqual(errors.get('password')[
+                         0], 'The passwords entered do not match')
+        self.assertEqual(errors.get('password_confirm')[
+                         0], 'The passwords entered do not match')
 
+    def test_create_user_with_exists_username(self):
+        """Создание аккаунта c уже существующим username"""
+        users = self.users
+        user_1 = users.get('user_1')
+        UserRegistrationView.post = post_for_activation_account_email_fake
+        ResendActivationAccountEmailView.get = get_for_activation_account_email_fake
+        password_1 = fake.password()
+        password_2 = fake.password()
+        username = user_1.get('username')
+        email = fake.email()
+        new_user = {
+            'username': username,
+            'email': email,
+            'password': password_1,
+            'password_confirm': password_2
+        }
+        # Пытаюсь создать пользователя
+        response = self.client.post(
+            path=reverse('register'),
+            data=new_user
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('errors', response.json().keys())
+        errors = response.json().get('errors')
+        self.assertEqual(errors.get('username')[
+                         0], 'A user with that username already exists.')
+
+    def test_create_user_with_invalid_passwords(self):
+        """Создание аккаунта c невалидными паролями"""
+        UserRegistrationView.post = post_for_activation_account_email_fake
+        ResendActivationAccountEmailView.get = get_for_activation_account_email_fake
         profile = fake.simple_profile()
         username = profile.get('username')
         email = fake.email()
         new_user = {
             'username': username,
             'email': email,
-            'password': fake.password(),
-            'password_confirm': fake.password()
+            'password': '12345678',
+            'password_confirm': '12345678'
         }
+        # Пытаюсь создать пользователя
         response = self.client.post(
-            path=reverse('user-list'),
+            path=reverse('register'),
             data=new_user
         )
-        new_user = response.json()
         self.assertEqual(response.status_code, 400)
-        self.assertEqual(
-            new_user.get('password')[0], 'The passwords entered do not match'
-        )
-        self.assertEqual(
-            new_user.get('password_confirm')[
-                0], 'The passwords entered do not match'
-        )
+        self.assertIn('errors', response.json().keys())
+        errors = response.json().get('errors')
+        self.assertEqual(errors.get('password')[
+                         0], 'This password is too common.')
+        self.assertEqual(errors.get('password')[
+                         1], 'This password is entirely numeric.')
 
-    def test_create_user_with_exist_username(self):
-        """Testing the registration of a user with an existing username"""
-
-        username = self.users.get('user_1').get('username')
-        email = fake.email()
-        password = fake.password()
-        new_user = {
-            'username': username,
-            'email': email,
-            'password': password,
-            'password_confirm': password
-        }
-        response = self.client.post(
-            path=reverse('user-list'),
-            data=new_user
-        )
-        new_user = response.json()
-        self.assertEqual(response.status_code, 400)
-        self.assertEqual(
-            new_user.get('username')[0],
-            'A user with that username already exists.'
-        )
-
-    def test_create_user_with_exist_email(self):
-        """Testing the creation of a user with an existing email"""
-
+    def test_create_user_with_exists_email(self):
+        """Создание аккаунта c уже существующим email"""
         profile = fake.simple_profile()
+        users = self.users
+        user_1 = users.get('user_1')
+        UserRegistrationView.post = post_for_activation_account_email_fake
+        ResendActivationAccountEmailView.get = get_for_activation_account_email_fake
+        password_1 = fake.password()
+        password_2 = fake.password()
         username = profile.get('username')
-        email = self.users.get('user_2').get('email')
-        password = fake.password()
+        email = user_1.get('email')
         new_user = {
             'username': username,
             'email': email,
-            'password': password,
-            'password_confirm': password
+            'password': password_1,
+            'password_confirm': password_2
         }
+        # Пытаюсь создать пользователя
         response = self.client.post(
-            path=reverse('user-list'),
+            path=reverse('register'),
             data=new_user
         )
-        new_user = response.json()
-        print(new_user)
         self.assertEqual(response.status_code, 400)
-        self.assertEqual(
-            new_user.get('email')[0], 'A user with that email already exists.'
-        )
+        self.assertIn('errors', response.json().keys())
+        errors = response.json().get('errors')
+        self.assertEqual(errors.get('email')[
+                         0], 'A user with that email already exists.')
 
     def test_create_token(self):
         """Testing token generation"""
@@ -137,7 +256,8 @@ class UserTestCase(CreateUsersTestCase):
         """Test resetting the password and creating a new password"""
 
         # Monkey patching
-        CustomUserViewSet.reset_password = test_reset_password
+        ResetPasswordView.post = post_for_reset_password_email_fake
+        ResetPasswordView.throttle_classes = []
         email = self.users.get('user_1').get('email')
         username = self.users.get('user_1').get('username')
         new_password = fake.password()
@@ -145,21 +265,24 @@ class UserTestCase(CreateUsersTestCase):
             'email': email
         }
         response = self.client.post(
-            path=reverse('user-reset-password'),
+            path=reverse('send_email_for_reset'),
             data=user_data
         )
-        reset_data = response.json()
-        self.assertEqual(response.status_code, 200)
-        uid = reset_data.get('uid')
+        self.assertEqual(response.status_code, 201)
+        self.assertIn('data', response.json().keys())
+        reset_data = response.json().get('data')
+        uidb64 = reset_data.get('uidb64')
         token = reset_data.get('token')
         new_password_data = {
-            'uid': uid,
-            'token': token,
-            'new_password': new_password,
-            'repeat_new_password': new_password
+            'password': new_password,
+            'password_confirm': new_password
         }
-        response = self.client.post(
-            path=reverse('user-reset-password-confirm'),
+        response = self.client.put(
+            path=reverse('confirm_for_reset_password', kwargs={
+                'uidb64': uidb64,
+                'token': token
+            }),
+            content_type='application/json',
             data=new_password_data
         )
         self.assertEqual(response.status_code, 204)
@@ -168,9 +291,11 @@ class UserTestCase(CreateUsersTestCase):
             'password': new_password
         }
         response = self.client.post(
-            path=reverse('jwt-create'),
+            path=reverse('login'),
             data=user_data
         )
-        auth_user = response.json()
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(['refresh', 'access'], list(auth_user.keys()))
+        self.assertIn('data', response.json().keys())
+        self.assertIn('tokens', response.json().get('data').keys())
+        tokens = response.json().get('data').get('tokens')
+        self.assertEqual(['refresh', 'access'], list(tokens.keys()))

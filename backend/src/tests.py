@@ -3,7 +3,6 @@ from django.urls import reverse
 from django.test import TestCase
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth import get_user_model
-
 User = get_user_model()
 
 
@@ -24,7 +23,8 @@ class CreateUsersTestCase(TestCase):
                 email=email,
                 password=make_password(
                     password=password
-                )
+                ),
+                is_confirm=True
             )
             self.users[f'user_{index}'] = {
                 'username':  username,
@@ -43,7 +43,9 @@ class CreateUsersTestCase(TestCase):
                 path=reverse('login'),
                 data=user_data
             )
-            auth_user = response.json()
             self.assertEqual(response.status_code, 200)
-            self.users[key].update({'token': auth_user.get('access')})
-            self.assertEqual(['refresh', 'access'], list(auth_user.keys()))
+            self.assertIn('data', response.json().keys())
+            self.assertIn('tokens', response.json().get('data').keys())
+            tokens = response.json().get('data').get('tokens')
+            self.users[key].update({'token': tokens.get('access')})
+            self.assertEqual(['refresh', 'access'], list(tokens.keys()))
