@@ -18,7 +18,8 @@ from src.users.api.v1.serializers import (
     ChangeUserPhoneNumberSerializer,
     ChangeUserPasswordSerializer,
     ChangeUserEmailSerializer,
-    UserTokenUIDSerializer
+    UserTokenUIDSerializer,
+    UserDataSerializer
 )
 from src.users.tasks import send_email_for_user
 from src.users.utils import (
@@ -282,6 +283,7 @@ class CheckTokenForChangeUserEmailView(APIView):
     """
     Проверка данных в ссылке на изменение почты
     """
+    permission_classes = [IsAuthenticated, ]
     serializer_class = UserTokenUIDSerializer
     renderer_classes = (UserDataRender,)
 
@@ -314,10 +316,38 @@ class CheckTokenForChangeUserEmailView(APIView):
                 data={'token': 'A token is not valid'},
                 status=status.HTTP_404_NOT_FOUND
             )
-        user.email = new_email.first().email
-        user.save()
-        new_email.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        if request.user.uuid == uid:
+            user.email = new_email.first().email
+            user.save()
+            new_email.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(
+                data={'uuid': 'An uuid is not valid'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
 
+
+class GetUserDataView(APIView):
+    permission_classes = [IsAuthenticated, ]
+    renderer_classes = (UserDataRender,)
+
+    def get(self, request):
+        user_data = {
+            'uuid': str(request.user.uuid),
+            'first_name': request.user.first_name,
+            'last_name': request.user.last_name,
+            'username': request.user.username,
+            'email': request.user.email,
+            'phone_number': request.user.phone_number
+        }
+        serializer = UserDataSerializer(
+            data=user_data,
+        )
+        serializer.is_valid(raise_exception=True)
+        return Response(
+            data=serializer.data,
+            status=status.HTTP_200_OK
+        )
 
 # Добавить эндпоитн на изменение имени пользователя
+

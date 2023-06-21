@@ -299,3 +299,35 @@ class UserTestCase(CreateUsersTestCase):
         self.assertIn('tokens', response.json().get('data').keys())
         tokens = response.json().get('data').get('tokens')
         self.assertEqual(['refresh', 'access'], list(tokens.keys()))
+
+    def test_change_user_first_name(self):
+        """Редактирование имени авторизованного пользователя"""
+        self.create_token()
+        users = self.users
+        for key, user in users.items():
+            profile = fake.simple_profile()
+            full_name = profile.get('name').split(' ')
+            first_name = full_name[0]
+            token = user.get('token')
+            auth_data = {
+                'Authorization': f'Bearer {token}'
+            }
+            change_data = {
+                'first_name': first_name
+            }
+
+            response = self.client.put(
+                path=reverse('change_first_name'),
+                content_type='application/json',
+                headers=auth_data,
+                data=change_data
+            )
+            changed_user = response
+            print(changed_user)
+            # self.assertEqual(response.status_code, 201)
+            # self.assertEqual(new_review.get('author').get(
+            #     'username'), user.get('username'))
+            # self.assertEqual(new_review.get(
+            #     'author').get('email'), user.get('email'))
+            # self.assertEqual(new_review.get('text'), text)
+            # self.users[key].update({'text': text})
