@@ -318,13 +318,3 @@ class UserTokenUIDSerializer(serializers.Serializer):
     """Сериалайзер для валидации токена и uid"""
     token = serializers.CharField()
     uid64 = serializers.CharField()
-
-
-class UserDataSerializer(serializers.Serializer):
-    """Сериалайзер для вывода данных пользователя"""
-    uuid = serializers.CharField()
-    first_name = serializers.CharField()
-    last_name = serializers.CharField()
-    username = serializers.CharField()
-    email = serializers.CharField()
-    phone_number = serializers.CharField()

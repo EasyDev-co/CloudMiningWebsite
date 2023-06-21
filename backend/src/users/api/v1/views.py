@@ -18,8 +18,7 @@ from src.users.api.v1.serializers import (
     ChangeUserPhoneNumberSerializer,
     ChangeUserPasswordSerializer,
     ChangeUserEmailSerializer,
-    UserTokenUIDSerializer,
-    UserDataSerializer
+    UserTokenUIDSerializer
 )
 from src.users.tasks import send_email_for_user
 from src.users.utils import (
@@ -340,12 +339,8 @@ class GetUserDataView(APIView):
             'email': request.user.email,
             'phone_number': request.user.phone_number
         }
-        serializer = UserDataSerializer(
-            data=user_data,
-        )
-        serializer.is_valid(raise_exception=True)
         return Response(
-            data=serializer.data,
+            data=user_data,
             status=status.HTTP_200_OK
         )
 

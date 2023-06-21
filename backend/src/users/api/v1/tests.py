@@ -304,7 +304,7 @@ class UserTestCase(CreateUsersTestCase):
         """Редактирование имени авторизованного пользователя"""
         self.create_token()
         users = self.users
-        for key, user in users.items():
+        for _, user in users.items():
             profile = fake.simple_profile()
             full_name = profile.get('name').split(' ')
             first_name = full_name[0]
@@ -322,12 +322,121 @@ class UserTestCase(CreateUsersTestCase):
                 headers=auth_data,
                 data=change_data
             )
-            changed_user = response
-            print(changed_user)
-            # self.assertEqual(response.status_code, 201)
-            # self.assertEqual(new_review.get('author').get(
-            #     'username'), user.get('username'))
-            # self.assertEqual(new_review.get(
-            #     'author').get('email'), user.get('email'))
-            # self.assertEqual(new_review.get('text'), text)
-            # self.users[key].update({'text': text})
+            self.assertEqual(response.status_code, 204)
+            response = self.client.get(
+                path=reverse('user'),
+                headers=auth_data
+            )
+            self.assertEqual(response.status_code, 200)
+            self.assertIn('data', response.json().keys())
+            user_data = response.json().get('data')
+            self.assertEqual(user_data.get('first_name'), first_name)
+
+    def test_change_user_last_name(self):
+        """Редактирование фамилии авторизованного пользователя"""
+        self.create_token()
+        users = self.users
+        for _, user in users.items():
+            profile = fake.simple_profile()
+            full_name = profile.get('name').split(' ')
+            last_name = full_name[1]
+            token = user.get('token')
+            auth_data = {
+                'Authorization': f'Bearer {token}'
+            }
+            change_data = {
+                'last_name': last_name
+            }
+
+            response = self.client.put(
+                path=reverse('change_last_name'),
+                content_type='application/json',
+                headers=auth_data,
+                data=change_data
+            )
+            self.assertEqual(response.status_code, 204)
+            response = self.client.get(
+                path=reverse('user'),
+                headers=auth_data
+            )
+            self.assertEqual(response.status_code, 200)
+            self.assertIn('data', response.json().keys())
+            user_data = response.json().get('data')
+            self.assertEqual(user_data.get('last_name'), last_name)
+
+    def test_change_user_phone_number(self):
+        """Редактирование номера телефона авторизованного пользователя"""
+
+        self.create_token()
+        users = self.users
+        for _, user in users.items():
+            phone_number = fake.msisdn()
+            token = user.get('token')
+            auth_data = {
+                'Authorization': f'Bearer {token}'
+            }
+            change_data = {
+                'phone_number': phone_number
+            }
+
+            response = self.client.put(
+                path=reverse('change_phone_number'),
+                content_type='application/json',
+                headers=auth_data,
+                data=change_data
+            )
+            self.assertEqual(response.status_code, 204)
+            response = self.client.get(
+                path=reverse('user'),
+                headers=auth_data
+            )
+            self.assertEqual(response.status_code, 200)
+            self.assertIn('data', response.json().keys())
+            user_data = response.json().get('data')
+            self.assertEqual(user_data.get('phone_number'), phone_number)
+
+    def test_change_user_phone_number_with_exist_phone_number(self):
+        """Редактирование номера телефона авторизованного пользователя
+        с уже существующим номером
+        """
+
+        # тут нужно отредачить тест
+        self.create_token()
+        users = self.users
+        for _, user in users.items():
+            phone_number = fake.msisdn()
+            token = user.get('token')
+            auth_data = {
+                'Authorization': f'Bearer {token}'
+            }
+            change_data = {
+                'phone_number': phone_number
+            }
+
+            response = self.client.put(
+                path=reverse('change_phone_number'),
+                content_type='application/json',
+                headers=auth_data,
+                data=change_data
+            )
+            self.assertEqual(response.status_code, 204)
+            response = self.client.get(
+                path=reverse('user'),
+                headers=auth_data
+            )
+            self.assertEqual(response.status_code, 200)
+            self.assertIn('data', response.json().keys())
+            user_data = response.json().get('data')
+            self.assertEqual(user_data.get('phone_number'), phone_number)
+# Еще нужны кейсы:
+
+# — Добавление нормера
+# — Добавление существующего номер
+# — Добавление невалидного номера
+
+# — Редактирование юзернейма
+# — Добавление уже существующего юзернейма
+
+# — Смена почты
+# — Без перехода по ссылке
+# — После перехода по ссылке
