@@ -1,4 +1,4 @@
-from django.urls import path, include, re_path
+from django.urls import path
 from src.users.api.v1.views import (
     UserRegistrationView,
     UserActivationAccountView,
@@ -13,13 +13,7 @@ from src.users.api.v1.views import (
     ChangeUserEmailView,
     CheckTokenForChangeUserEmailView
 )
-from django.contrib.auth import get_user_model
-from rest_framework.routers import DefaultRouter
-from rest_framework_simplejwt.views import (
-    TokenObtainPairView,
-    TokenRefreshView,
-    TokenVerifyView
-)
+from rest_framework_simplejwt.views import TokenRefreshView
 
 urlpatterns = [
     # path('login/', TokenObtainPairView.as_view(), name='token_obtain_pair'),

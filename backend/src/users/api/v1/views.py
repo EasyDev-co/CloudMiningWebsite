@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from src.users.api.v1.serializers import (
     UserRegisterSerializer,
-    UserActivationAccountSerializer,
+    UserTokenSerializer,
     ResendActivationAccountEmailSerializer,
     LoginUserSerializer,
     SendResetPasswordEmailSerializer,
@@ -17,7 +17,8 @@ from src.users.api.v1.serializers import (
     ChangeUserLastNameSerializer,
     ChangeUserPhoneNumberSerializer,
     ChangeUserPasswordSerializer,
-    ChangeUserEmailSerializer
+    ChangeUserEmailSerializer,
+    UserTokenUIDSerializer
 )
 from src.users.tasks import send_email_for_user
 from src.users.utils import (
@@ -33,6 +34,14 @@ User = get_user_model()
 
 
 class UserRegistrationView(generics.GenericAPIView):
+    """
+    Регистрация пользователя.
+    После отправки запроса на переданный адрес эл.почты
+    придет письмо с ссылкой для активации аккаунта
+
+    Если не активировать, аккаунт, то дальнейшее взаимодействие
+    с ним невозможно
+    """
 
     serializer_class = UserRegisterSerializer
     renderer_classes = (UserDataRender,)
@@ -56,6 +65,10 @@ class UserRegistrationView(generics.GenericAPIView):
 
 
 class ResendActivationAccountEmailView(generics.GenericAPIView):
+    """
+    Повторная отправка письма для подтверждения аккаунта
+    Запрос на данный эндпоинт может быть отправлен 1 раз в 1 минуту
+    """
     serializer_class = ResendActivationAccountEmailSerializer
     renderer_classes = (UserDataRender,)
     throttle_classes = (AnonRateThrottle,)
@@ -75,7 +88,10 @@ class ResendActivationAccountEmailView(generics.GenericAPIView):
 
 
 class UserActivationAccountView(APIView):
-    serializer_class = UserActivationAccountSerializer
+    """
+    Обработка ссылки для активации аккаунта
+    """
+    serializer_class = UserTokenSerializer
     renderer_classes = (UserDataRender,)
 
     def get(self, request, token):
@@ -88,6 +104,8 @@ class UserActivationAccountView(APIView):
 
 
 class UserLoginView(generics.GenericAPIView):
+    """Авторизация пользователя в системе
+    и последующее получение токенов"""
     serializer_class = LoginUserSerializer
     renderer_classes = (UserDataRender,)
 
@@ -98,6 +116,10 @@ class UserLoginView(generics.GenericAPIView):
 
 
 class ResetPasswordView(generics.GenericAPIView):
+    """Сброс пароля.
+    После отправки запроса с валидным адресом эл.почты,
+    на нее будет отправленно письмо с ссылкой на для ввода нового пароля
+    """
     serializer_class = SendResetPasswordEmailSerializer
     throttle_classes = (AnonRateThrottle,)
     renderer_classes = (UserDataRender,)
@@ -117,6 +139,10 @@ class ResetPasswordView(generics.GenericAPIView):
 
 
 class CheckTokenForResetPasswordView(generics.GenericAPIView):
+    """
+    Проверяет переданные данные из ссылки для сброса пароля и
+    валидирует новый пароль пользователя
+    """
     serializer_class = CheckTokenForResetPasswordSerializer
     renderer_classes = (UserDataRender,)
 
@@ -133,13 +159,22 @@ class CheckTokenForResetPasswordView(generics.GenericAPIView):
             User.DoesNotExist,
             DjangoUnicodeDecodeError
         ):
-            return Response(data={'uuid': 'An uuid is not valid'}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response(
+                data={'uuid': 'An uuid is not valid'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
         if not PasswordResetTokenGenerator().check_token(user, token):
-            return Response(data={'token': 'A token is not valid'}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response(
+                data={'token': 'A token is not valid'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
         try:
             user = User.objects.get(uuid=uid)
         except User.DoesNotExist:
-            return Response(data={'token': 'A token is not valid'}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                data={'token': 'A token is not valid'},
+                status=status.HTTP_404_NOT_FOUND
+            )
         serializer = self.serializer_class(data=request.data, instance=user)
         serializer.is_valid(raise_exception=True)
         serializer.save()
@@ -147,54 +182,80 @@ class CheckTokenForResetPasswordView(generics.GenericAPIView):
 
 
 class ChangeUserFirstNameView(generics.GenericAPIView):
+    """
+    Изменение имени авторизированного пользователя
+    """
     serializer_class = ChangeUserFirstNameSerializer
     permission_classes = [IsAuthenticated, ]
     renderer_classes = (UserDataRender,)
 
     def put(self, request):
-        serializer = self.serializer_class(data=request.data, instance=request.user)
+        serializer = self.serializer_class(
+            data=request.data, instance=request.user
+        )
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class ChangeUserLastNameView(generics.GenericAPIView):
+    """
+    Изменение фамилии авторизированного пользователя
+    """
     serializer_class = ChangeUserLastNameSerializer
     permission_classes = [IsAuthenticated, ]
     renderer_classes = (UserDataRender,)
 
     def put(self, request):
-        serializer = self.serializer_class(data=request.data, instance=request.user)
+        serializer = self.serializer_class(
+            data=request.data, instance=request.user
+        )
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class ChangeUserPhoneNumberView(generics.GenericAPIView):
+    """
+    Изменение номера телефона авторизированного пользователя
+    """
     serializer_class = ChangeUserPhoneNumberSerializer
     permission_classes = [IsAuthenticated, ]
     renderer_classes = (UserDataRender,)
 
     def put(self, request):
-        serializer = self.serializer_class(data=request.data, instance=request.user)
+        serializer = self.serializer_class(
+            data=request.data, instance=request.user
+        )
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class ChangeUserPasswordView(generics.GenericAPIView):
+    """
+    Изменение пароля авторизированного пользователя
+    """
     serializer_class = ChangeUserPasswordSerializer
     permission_classes = [IsAuthenticated, ]
     renderer_classes = (UserDataRender,)
 
     def put(self, request):
-        serializer = self.serializer_class(data=request.data, instance=request.user)
+        serializer = self.serializer_class(
+            data=request.data, instance=request.user
+        )
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class ChangeUserEmailView(generics.GenericAPIView):
+    """
+    Изменение эл.почты авторизированного пользователя.
+    На переданную электронную почту будет отправленна ссылка
+    на изменение эл. почты, пока пользователь не перейдет по этой
+    ссылке, почта не будет изменена
+    """
     serializer_class = ChangeUserEmailSerializer
     throttle_classes = (AnonRateThrottle,)
     renderer_classes = (UserDataRender,)
@@ -203,7 +264,9 @@ class ChangeUserEmailView(generics.GenericAPIView):
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
-        NewEmail.objects.create(user_uuid_id=request.user.uuid, email=serializer.data.get('email'))
+        NewEmail.objects.create(
+            user_uuid_id=request.user.uuid, email=serializer.data.get('email')
+        )
         data = get_data_for_add_new_email_for_user_email(
             email=serializer.data.get('email'),
             user=request.user,
@@ -215,7 +278,11 @@ class ChangeUserEmailView(generics.GenericAPIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class CheckTokenForChangeUserEmailView(generics.GenericAPIView):
+class CheckTokenForChangeUserEmailView(APIView):
+    """
+    Проверка данных в ссылке на изменение почты
+    """
+    serializer_class = UserTokenUIDSerializer
     renderer_classes = (UserDataRender,)
 
     def put(self, request, **kwargs):
@@ -231,14 +298,26 @@ class CheckTokenForChangeUserEmailView(generics.GenericAPIView):
             User.DoesNotExist,
             DjangoUnicodeDecodeError
         ):
-            return Response(data={'uuid': 'An uuid is not valid'}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response(
+                data={'uuid': 'An uuid is not valid'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
         if not PasswordResetTokenGenerator().check_token(user, token):
-            return Response(data={'token': 'A token is not valid'}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response(
+                data={'token': 'A token is not valid'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
         try:
             new_email = NewEmail.objects.filter(user_uuid_id=user.uuid)
         except (User.DoesNotExist, NewEmail.DoesNotExist):
-            return Response(data={'token': 'A token is not valid'}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                data={'token': 'A token is not valid'},
+                status=status.HTTP_404_NOT_FOUND
+            )
         user.email = new_email.first().email
         user.save()
         new_email.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+# Добавить эндпоитн на изменение имени пользователя

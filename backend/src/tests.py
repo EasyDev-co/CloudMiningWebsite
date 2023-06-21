@@ -40,7 +40,7 @@ class CreateUsersTestCase(TestCase):
                 'password': user.get('password')
             }
             response = self.client.post(
-                path=reverse('jwt-create'),
+                path=reverse('login'),
                 data=user_data
             )
             auth_user = response.json()

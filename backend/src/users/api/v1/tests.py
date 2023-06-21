@@ -3,7 +3,6 @@ from djoser.email import PasswordResetEmail
 from django.urls import reverse
 from rest_framework.response import Response
 from src.tests import CreateUsersTestCase
-from src.users.api.v1.views import CustomUserViewSet
 from src.users.models import User
 
 

@@ -59,7 +59,8 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         return User.objects.create_user(**validated_data)
 
 
-class UserActivationAccountSerializer(serializers.Serializer):
+class UserTokenSerializer(serializers.Serializer):
+    """Сериалайзер для валидации токена"""
     token = serializers.CharField(write_only=True)
     uuid = serializers.CharField(read_only=True)
 
@@ -289,7 +290,8 @@ class ChangeUserPasswordSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         if not instance.check_password(validated_data.get('current_password')):
-            raise serializers.ValidationError({"current_password": "Current password is not correct"})
+            raise serializers.ValidationError(
+                {"current_password": "Current password is not correct"})
         instance.set_password(validated_data.get('new_password'))
         instance.save()
         return instance
@@ -310,3 +312,9 @@ class ChangeUserEmailSerializer(serializers.ModelSerializer):
                 detail={'email': 'An email is already exist'}
             )
         return validated_data
+
+
+class UserTokenUIDSerializer(serializers.Serializer):
+    """Сериалайзер для валидации токена и uid"""
+    token = serializers.CharField()
+    uid64 = serializers.CharField()
