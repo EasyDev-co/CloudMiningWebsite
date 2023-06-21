@@ -14,6 +14,7 @@ class ReviewsSerializer(serializers.ModelSerializer):
             'last_name',
             'phone_number',
             'text',
+            'rating',
             'created_at',
         ]
 
