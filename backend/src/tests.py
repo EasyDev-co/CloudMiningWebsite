@@ -18,18 +18,21 @@ class CreateUsersTestCase(TestCase):
             username = profile.get('username')
             password = fake.password()
             email = fake.email()
+            phone_number = int(fake.msisdn()) - index
             User.objects.create(
                 username=username,
                 email=email,
                 password=make_password(
                     password=password
                 ),
+                phone_number=phone_number,
                 is_confirm=True
             )
             self.users[f'user_{index}'] = {
                 'username':  username,
                 'password': password,
-                'email': email
+                'email': email,
+                'phone_number': str(phone_number)
             }
 
     def create_token(self):

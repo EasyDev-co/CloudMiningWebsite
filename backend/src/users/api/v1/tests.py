@@ -400,38 +400,61 @@ class UserTestCase(CreateUsersTestCase):
         с уже существующим номером
         """
 
-        # тут нужно отредачить тест
         self.create_token()
         users = self.users
-        for _, user in users.items():
-            phone_number = fake.msisdn()
-            token = user.get('token')
-            auth_data = {
-                'Authorization': f'Bearer {token}'
-            }
-            change_data = {
-                'phone_number': phone_number
-            }
+        user_1 = users.get('user_1')
+        exist_phone_number = user_1.get('phone_number')
+        user_2 = users.get('user_2')
 
-            response = self.client.put(
-                path=reverse('change_phone_number'),
-                content_type='application/json',
-                headers=auth_data,
-                data=change_data
-            )
-            self.assertEqual(response.status_code, 204)
-            response = self.client.get(
-                path=reverse('user'),
-                headers=auth_data
-            )
-            self.assertEqual(response.status_code, 200)
-            self.assertIn('data', response.json().keys())
-            user_data = response.json().get('data')
-            self.assertEqual(user_data.get('phone_number'), phone_number)
+        token = user_2.get('token')
+        auth_data = {
+            'Authorization': f'Bearer {token}'
+        }
+        change_data = {
+            'phone_number': exist_phone_number
+        }
+        response = self.client.put(
+            path=reverse('change_phone_number'),
+            content_type='application/json',
+            headers=auth_data,
+            data=change_data
+        )
+        print(response.json())
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('errors', response.json().keys())
+        errors = response.json().get('errors')
+        self.assertEqual(errors.get('phone_number')[0], 'An current phone number already exists')
+
+    def test_change_user_phone_number_with_invalid_phone_number(self):
+        """Редактирование номера телефона авторизованного пользователя
+        на невалидный номер
+        """
+
+        self.create_token()
+        users = self.users
+        user = users.get('user_1')
+
+        token = user.get('token')
+        auth_data = {
+            'Authorization': f'Bearer {token}'
+        }
+        change_data = {
+            'phone_number': '0102'
+        }
+        response = self.client.put(
+            path=reverse('change_phone_number'),
+            content_type='application/json',
+            headers=auth_data,
+            data=change_data
+        )
+        print(response.json())
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('errors', response.json().keys())
+        errors = response.json().get('errors')
+        self.assertEqual(errors.get('phone_number')[0], 'Incorrect phone number. The number must consist of digits')
+        self.assertEqual(errors.get('phone_number')[1], 'Ensure this field has at least 8 characters.')
 # Еще нужны кейсы:
 
-# — Добавление нормера
-# — Добавление существующего номер
 # — Добавление невалидного номера
 
 # — Редактирование юзернейма
