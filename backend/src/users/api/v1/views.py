@@ -17,7 +17,7 @@ from src.users.api.v1.serializers import (
     ChangeUserLastNameSerializer,
     ChangeUserPhoneNumberSerializer,
     ChangeUserPasswordSerializer,
-    ChangeUserEmailViewSerializer
+    ChangeUserEmailSerializer
 )
 from src.users.tasks import send_email_for_user
 from src.users.utils import (
@@ -193,7 +193,7 @@ class ChangeUserPasswordView(generics.GenericAPIView):
 
 
 class ChangeUserEmailView(generics.GenericAPIView):
-    serializer_class = SendResetPasswordEmailSerializer
+    serializer_class = ChangeUserEmailSerializer
     throttle_classes = (AnonRateThrottle,)
     renderer_classes = (UserDataRender,)
 
@@ -209,3 +209,6 @@ class ChangeUserEmailView(generics.GenericAPIView):
             data=data
         )
         return Response(status=status.HTTP_204_NO_CONTENT)
+    
+
+# тут я пишу класс который будет принимать token пользователя и менять ему email

@@ -295,7 +295,7 @@ class ChangeUserPasswordSerializer(serializers.ModelSerializer):
         return instance
 
 
-class ChangeUserEmailViewSerializer(serializers.ModelSerializer):
+class ChangeUserEmailSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(validators=[EmailValidator, ])
 
     class Meta:

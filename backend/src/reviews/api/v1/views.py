@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 from src.reviews.api.v1.serializers import (
     ReviewsSerializer,
+    AddReviewLogicSerializer,
     AddReviewSerializer
 )
 from src.reviews.models import Review
@@ -20,6 +21,7 @@ class ReviewsListPagination(PageNumberPagination):
 
 class AddReviewView(generics.GenericAPIView):
     """Добавление отзыва"""
+
     serializer_class = AddReviewSerializer
 
     def get_author_data(self, request):
@@ -46,21 +48,21 @@ class AddReviewView(generics.GenericAPIView):
             return {
                 'first_name': user.first_name,
                 'last_name': user.last_name,
-                'phone_number': user.phone_number
+                'phone_number': user.phone_number,
+                'rating': request.data.get('rating'),
+                'text': request.data.get('text')
             }
 
     def post(self, request, *args, **kwargs):
         data = self.get_author_data(request=request)
-        serializer = self.serializer_class(
+        serializer = AddReviewLogicSerializer(
             data=data
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        headers = self.get_success_headers(serializer.data)
         return Response(
             serializer.data,
-            status=status.HTTP_201_CREATED,
-            headers=headers
+            status=status.HTTP_201_CREATED
             )
 
 

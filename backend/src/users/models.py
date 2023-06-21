@@ -62,3 +62,18 @@ class User(AbstractUser):
             'refresh': str(refresh_token),
             'access': str(refresh_token.access_token)
         }
+
+
+class NewEmail(models.Model):
+    email = models.EmailField(
+        _("email address"),
+        unique=True,
+        error_messages={
+            "unique": _("A user with that email already exists."),
+        }
+    )
+    user_uuid = models.ForeignKey(
+        'User',
+        to_field='uuid',
+        on_delete=models.CASCADE
+    )
