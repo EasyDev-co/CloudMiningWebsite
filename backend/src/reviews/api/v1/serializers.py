@@ -20,8 +20,6 @@ class ReviewsSerializer(serializers.ModelSerializer):
 
 
 class AddReviewSerializer(serializers.ModelSerializer):
-    first_name = serializers.CharField()
-    last_name = serializers.CharField()
     phone_number = serializers.CharField(validators=[RegexValidator(
         regex=PHONE_NUMBER_PATTERN,
         message='Incorrect phone number. The number must consist of digits'

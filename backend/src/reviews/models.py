@@ -1,8 +1,5 @@
 from django.db import models
-from django.contrib.auth import get_user_model
 from django.utils.translation import gettext_lazy as _
-
-User = get_user_model()
 
 
 class Review(models.Model):
@@ -14,7 +11,7 @@ class Review(models.Model):
     last_name = models.CharField(max_length=100, verbose_name='Фамилия')
     phone_number = models.CharField(
         max_length=15,
-        verbose_name='Номер телефона'
+        verbose_name='Номер телефона',
         error_messages={
             "max_length": _("A telephone number cannot have more than 15 digits")
         }
