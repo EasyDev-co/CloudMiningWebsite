@@ -50,8 +50,8 @@ class UserRegisterSerializer(serializers.ModelSerializer):
             return validated_data
         raise serializers.ValidationError(
             {
-                "password": 'The passwords entered do not match',
-                "password_confirm": 'The passwords entered do not match'
+                "password": 'The passwords entered do not match.',
+                "password_confirm": 'The passwords entered do not match.'
             }
         )
 
@@ -72,13 +72,19 @@ class UserTokenSerializer(serializers.Serializer):
                 token,
                 settings.SECRET_KEY, algorithms=['HS256'])
             user = User.objects.get(pk=token_data.get('user_uuid'))
-        except (User.DoesNotExist, ValueError, TypeError, OverflowError, jwt.DecodeError):
+        except (
+            User.DoesNotExist,
+            ValueError,
+            TypeError,
+            OverflowError,
+            jwt.DecodeError
+        ):
             raise exceptions.NotAcceptable(
-                {"link": 'An activation link is invalid'}
+                {"link": 'An activation link is invalid.'}
             )
         except jwt.ExpiredSignatureError:
             raise exceptions.NotAcceptable(
-                {'link': 'An activation link has expired'}
+                {'link': 'An activation link has expired.'}
             )
         validated_data['uuid'] = user.uuid
         return validated_data
@@ -98,11 +104,11 @@ class ResendActivationAccountEmailSerializer(serializers.ModelSerializer):
             user = self.Meta.model.objects.get(email=email)
         except self.Meta.model.DoesNotExist:
             raise exceptions.NotFound(
-                detail={'email': 'An email does not exist'}
+                detail={'email': 'An email does not exist.'}
             )
         if user.is_confirm:
             raise exceptions.NotFound(
-                detail={'user': 'A user is already confirm'}
+                detail={'user': 'An user is already confirm.'}
             )
         return validated_data
 
@@ -127,12 +133,12 @@ class LoginUserSerializer(serializers.ModelSerializer):
         if not user:
             raise exceptions.ValidationError(
                 detail={
-                    "new_password": 'Invalid credential'
+                    "new_password": 'Invalid credential.'
                 }
             )
         if not user.is_confirm:
             raise exceptions.ValidationError(
-                detail='An account is not confirm'
+                detail='An account is not confirm.'
             )
         validated_data['tokens'] = user.tokens
         return validated_data
@@ -152,7 +158,7 @@ class SendResetPasswordEmailSerializer(serializers.ModelSerializer):
             self.Meta.model.objects.get(email=email)
         except self.Meta.model.DoesNotExist:
             raise exceptions.NotFound(
-                detail={'email': 'An email does not exist'}
+                detail={'email': 'An email does not exist.'}
             )
         return validated_data
 
@@ -187,8 +193,8 @@ class CheckTokenForResetPasswordSerializer(serializers.ModelSerializer):
             return validated_data
         raise serializers.ValidationError(
             {
-                "password": 'The passwords entered do not match',
-                "password_confirm": 'The passwords entered do not match'
+                "password": 'The passwords entered do not match.',
+                "password_confirm": 'The passwords entered do not match.'
             }
         )
 
@@ -224,7 +230,7 @@ class ChangeUserLastNameSerializer(serializers.ModelSerializer):
 class ChangeUserPhoneNumberSerializer(serializers.ModelSerializer):
     phone_number = serializers.CharField(validators=[RegexValidator(
         regex=PHONE_NUMBER_PATTERN,
-        message='Incorrect phone number. The number must consist of digits'
+        message='Incorrect phone number. The number must consist of digits.'
     ), ],
         min_length=8,
         max_length=15
@@ -238,7 +244,7 @@ class ChangeUserPhoneNumberSerializer(serializers.ModelSerializer):
         phone_number = attrs.get('phone_number')
         if self.Meta.model.objects.filter(phone_number=phone_number).exists():
             raise exceptions.ValidationError(
-                detail={'phone_number': 'An current phone number already exists'}
+                detail={'phone_number': 'An current phone number already exists.'}
             )
         validated_data = super().validate(attrs)
         return validated_data
@@ -283,15 +289,15 @@ class ChangeUserPasswordSerializer(serializers.ModelSerializer):
             return validated_data
         raise serializers.ValidationError(
             {
-                "new_password": 'The passwords entered do not match',
-                "new_password_confirm": 'The passwords entered do not match'
+                "new_password": 'The passwords entered do not match.',
+                "new_password_confirm": 'The passwords entered do not match.'
             }
         )
 
     def update(self, instance, validated_data):
         if not instance.check_password(validated_data.get('current_password')):
             raise serializers.ValidationError(
-                {"current_password": "Current password is not correct"})
+                {"current_password": "Current password is not correct."})
         instance.set_password(validated_data.get('new_password'))
         instance.save()
         return instance
@@ -309,7 +315,7 @@ class ChangeUserEmailSerializer(serializers.ModelSerializer):
         email = attrs.get('email', '')
         if self.Meta.model.objects.filter(email=email).exists():
             raise exceptions.ValidationError(
-                detail={'email': 'An email is already exist'}
+                detail={'email': 'An email is already exist.'}
             )
         return validated_data
 
@@ -329,7 +335,7 @@ class ChangeUserUsernameSerializer(serializers.ModelSerializer):
         username = value
         if self.Meta.model.objects.filter(username=username).exists():
             raise exceptions.ValidationError(
-                detail='An username is already exist'
+                detail='An username is already exist.'
             )
         return value
 

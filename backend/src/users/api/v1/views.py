@@ -180,19 +180,19 @@ class CheckTokenForResetPasswordView(generics.GenericAPIView):
             DjangoUnicodeDecodeError
         ):
             return Response(
-                data={'uuid': 'An uuid is not valid'},
+                data={'uuid': 'An uuid is not valid.'},
                 status=status.HTTP_401_UNAUTHORIZED
             )
         if not PasswordResetTokenGenerator().check_token(user, token):
             return Response(
-                data={'token': 'A token is not valid'},
+                data={'token': 'A token is not valid.'},
                 status=status.HTTP_401_UNAUTHORIZED
             )
         try:
             user = User.objects.get(uuid=uid)
         except User.DoesNotExist:
             return Response(
-                data={'token': 'A token is not valid'},
+                data={'token': 'A token is not valid.'},
                 status=status.HTTP_404_NOT_FOUND
             )
         serializer = self.serializer_class(data=request.data, instance=user)
@@ -320,19 +320,19 @@ class CheckTokenForChangeUserEmailView(APIView):
             DjangoUnicodeDecodeError
         ):
             return Response(
-                data={'uuid': 'An uuid is not valid'},
+                data={'uuid': 'An uuid is not valid.'},
                 status=status.HTTP_401_UNAUTHORIZED
             )
         if not PasswordResetTokenGenerator().check_token(user, token):
             return Response(
-                data={'token': 'A token is not valid'},
+                data={'token': 'A token is not valid.'},
                 status=status.HTTP_401_UNAUTHORIZED
             )
         try:
             new_email = NewEmail.objects.filter(user_uuid_id=user.uuid)
         except (User.DoesNotExist, NewEmail.DoesNotExist):
             return Response(
-                data={'token': 'A token is not valid'},
+                data={'token': 'A token is not valid.'},
                 status=status.HTTP_404_NOT_FOUND
             )
         if str(request.user.uuid) == uid:
@@ -341,7 +341,7 @@ class CheckTokenForChangeUserEmailView(APIView):
             new_email.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response(
-                data={'uuid': 'An uuid is not valid'},
+                data={'uuid': 'An uuid is not valid.'},
                 status=status.HTTP_401_UNAUTHORIZED
             )
 

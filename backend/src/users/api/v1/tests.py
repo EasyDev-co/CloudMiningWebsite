@@ -179,9 +179,9 @@ class UserTestCase(CreateUsersTestCase):
         self.assertIn('errors', response.json().keys())
         errors = response.json().get('errors')
         self.assertEqual(errors.get('password')[
-                         0], 'The passwords entered do not match')
+                         0], 'The passwords entered do not match.')
         self.assertEqual(errors.get('password_confirm')[
-                         0], 'The passwords entered do not match')
+                         0], 'The passwords entered do not match.')
 
     def test_create_user_with_exists_username(self):
         """Создание аккаунта c уже существующим username"""
@@ -440,7 +440,7 @@ class UserTestCase(CreateUsersTestCase):
         self.assertIn('errors', response.json().keys())
         errors = response.json().get('errors')
         self.assertEqual(errors.get('phone_number')[
-                         0], 'An current phone number already exists')
+                         0], 'An current phone number already exists.')
 
     def test_change_user_phone_number_with_invalid_phone_number(self):
         """Редактирование номера телефона авторизованного пользователя
@@ -468,7 +468,7 @@ class UserTestCase(CreateUsersTestCase):
         self.assertIn('errors', response.json().keys())
         errors = response.json().get('errors')
         self.assertEqual(errors.get('phone_number')[
-                         0], 'Incorrect phone number. The number must consist of digits')
+                         0], 'Incorrect phone number. The number must consist of digits.')
         self.assertEqual(errors.get('phone_number')[
                          1], 'Ensure this field has at least 8 characters.')
 
