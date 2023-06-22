@@ -439,7 +439,8 @@ class UserTestCase(CreateUsersTestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn('errors', response.json().keys())
         errors = response.json().get('errors')
-        self.assertEqual(errors.get('phone_number')[0], 'An current phone number already exists')
+        self.assertEqual(errors.get('phone_number')[
+                         0], 'An current phone number already exists')
 
     def test_change_user_phone_number_with_invalid_phone_number(self):
         """Редактирование номера телефона авторизованного пользователя
@@ -466,8 +467,10 @@ class UserTestCase(CreateUsersTestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn('errors', response.json().keys())
         errors = response.json().get('errors')
-        self.assertEqual(errors.get('phone_number')[0], 'Incorrect phone number. The number must consist of digits')
-        self.assertEqual(errors.get('phone_number')[1], 'Ensure this field has at least 8 characters.')
+        self.assertEqual(errors.get('phone_number')[
+                         0], 'Incorrect phone number. The number must consist of digits')
+        self.assertEqual(errors.get('phone_number')[
+                         1], 'Ensure this field has at least 8 characters.')
 
     def test_change_user_username(self):
         """Редактирование юзернейма авторизированного пользователя"""
@@ -528,7 +531,8 @@ class UserTestCase(CreateUsersTestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn('errors', response.json().keys())
         errors = response.json().get('errors')
-        self.assertEqual(errors.get('username')[0], 'A user with that username already exists.')
+        self.assertEqual(errors.get('username')[
+                         0], 'A user with that username already exists.')
 
     def test_change_user_email(self):
         """Редактирование эл. почты авторизированного пользователя
@@ -563,25 +567,51 @@ class UserTestCase(CreateUsersTestCase):
             content_type='application/json',
             headers=auth_data
         )
-        print(response)
-        # self.assertEqual(response.status_code, 204)
-        # user_data = {
-        #     'username': username,
-        #     'password': new_password
-        # }
-        # response = self.client.post(
-        #     path=reverse('login'),
-        #     data=user_data
-        # )
-        # self.assertEqual(response.status_code, 200)
-        # self.assertIn('data', response.json().keys())
-        # self.assertIn('tokens', response.json().get('data').keys())
-        # tokens = response.json().get('data').get('tokens')
-        # self.assertEqual(['refresh', 'access'], list(tokens.keys()))
-# Еще нужны кейсы:
+        self.assertEqual(response.status_code, 204)
+        response = self.client.get(
+            path=reverse('user'),
+            headers=auth_data
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('data', response.json().keys())
+        user_data = response.json().get('data')
+        self.assertEqual(user_data.get('email'), new_email)
 
-# — Смена почты
-# — Без перехода по ссылке
-# — После перехода по ссылке
+    def test_change_user_email_without_link(self):
+        """Редактирование эл. почты авторизированного пользователя
+        без перехода по ссылке
+        """
+
+        # Monkey patching
+        ChangeUserEmailView.post = post_for_change_user_email_fake
+        self.create_token()
+        token = self.users.get('user_1').get('token')
+        old_email = self.users.get('user_1').get('email')
+        new_email = fake.email()
+        user_data = {
+            'email': new_email
+        }
+        auth_data = {
+            'Authorization': f'Bearer {token}'
+        }
+        response = self.client.post(
+            path=reverse('change_email'),
+            data=user_data,
+            headers=auth_data
+        )
+        self.assertEqual(response.status_code, 201)
+        self.assertIn('data', response.json().keys())
+        data_for_update = response.json().get('data')
+        self.assertIn('uidb64', data_for_update.keys())
+        self.assertIn('token', data_for_update.keys())
+        response = self.client.get(
+            path=reverse('user'),
+            headers=auth_data
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('data', response.json().keys())
+        user_data = response.json().get('data')
+        self.assertEqual(user_data.get('email'), old_email)
+        self.assertNotEqual(user_data.get('email'), new_email)
 
 # еще можно проверять токены и uid

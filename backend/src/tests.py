@@ -18,7 +18,7 @@ class CreateUsersTestCase(TestCase):
             username = profile.get('username')
             password = fake.password()
             email = fake.email()
-            phone_number = int(fake.msisdn()) - index
+            phone_number = int(fake.msisdn()) + index ** 22
             User.objects.create(
                 username=username,
                 email=email,
