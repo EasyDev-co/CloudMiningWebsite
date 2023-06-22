@@ -318,3 +318,22 @@ class UserTokenUIDSerializer(serializers.Serializer):
     """Сериалайзер для валидации токена и uid"""
     token = serializers.CharField()
     uid64 = serializers.CharField()
+
+
+class ChangeUserUsernameSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['username', ]
+
+    def validate_username(self, value):
+        username = value
+        if self.Meta.model.objects.filter(username=username).exists():
+            raise exceptions.ValidationError(
+                detail='An username is already exist'
+            )
+        return value
+
+    def update(self, instance, validated_data):
+        instance.username = (validated_data.get('username'))
+        instance.save()
+        return instance

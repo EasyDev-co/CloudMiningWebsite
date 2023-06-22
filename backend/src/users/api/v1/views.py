@@ -18,7 +18,8 @@ from src.users.api.v1.serializers import (
     ChangeUserPhoneNumberSerializer,
     ChangeUserPasswordSerializer,
     ChangeUserEmailSerializer,
-    UserTokenUIDSerializer
+    UserTokenUIDSerializer,
+    ChangeUserUsernameSerializer
 )
 from src.users.tasks import send_email_for_user
 from src.users.utils import (
@@ -31,6 +32,25 @@ from rest_framework.throttling import AnonRateThrottle
 from src.users.models import NewEmail
 
 User = get_user_model()
+
+
+class GetUserDataView(APIView):
+    permission_classes = [IsAuthenticated, ]
+    renderer_classes = (UserDataRender,)
+
+    def get(self, request):
+        user_data = {
+            'uuid': str(request.user.uuid),
+            'first_name': request.user.first_name,
+            'last_name': request.user.last_name,
+            'username': request.user.username,
+            'email': request.user.email,
+            'phone_number': request.user.phone_number
+        }
+        return Response(
+            data=user_data,
+            status=status.HTTP_200_OK
+        )
 
 
 class UserRegistrationView(generics.GenericAPIView):
@@ -315,7 +335,7 @@ class CheckTokenForChangeUserEmailView(APIView):
                 data={'token': 'A token is not valid'},
                 status=status.HTTP_404_NOT_FOUND
             )
-        if request.user.uuid == uid:
+        if str(request.user.uuid) == uid:
             user.email = new_email.first().email
             user.save()
             new_email.delete()
@@ -326,23 +346,18 @@ class CheckTokenForChangeUserEmailView(APIView):
             )
 
 
-class GetUserDataView(APIView):
+class ChangeUserUsenameView(generics.GenericAPIView):
+    """
+    Изменение юзернейма авторизированного пользователя
+    """
+    serializer_class = ChangeUserUsernameSerializer
     permission_classes = [IsAuthenticated, ]
     renderer_classes = (UserDataRender,)
 
-    def get(self, request):
-        user_data = {
-            'uuid': str(request.user.uuid),
-            'first_name': request.user.first_name,
-            'last_name': request.user.last_name,
-            'username': request.user.username,
-            'email': request.user.email,
-            'phone_number': request.user.phone_number
-        }
-        return Response(
-            data=user_data,
-            status=status.HTTP_200_OK
+    def put(self, request):
+        serializer = self.serializer_class(
+            data=request.data, instance=request.user
         )
-
-# Добавить эндпоитн на изменение имени пользователя
-
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)

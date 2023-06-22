@@ -11,9 +11,10 @@ from django.utils.encoding import force_bytes
 from src.users.api.v1.views import (
     UserRegistrationView,
     ResendActivationAccountEmailView,
-    ResetPasswordView
+    ResetPasswordView,
+    ChangeUserEmailView
 )
-
+from src.users.models import NewEmail
 
 User = get_user_model()
 
@@ -47,6 +48,22 @@ def post_for_reset_password_email_fake(self, request):
     serializer = self.serializer_class(data=request.data)
     serializer.is_valid(raise_exception=True)
     user = User.objects.get(email=serializer.data.get('email'))
+    uidb64 = urlsafe_base64_encode(force_bytes(user.uuid))
+    token = PasswordResetTokenGenerator().make_token(user)
+    data = {
+        'uidb64': uidb64,
+        'token': token
+    }
+    return Response(data=data, status=status.HTTP_201_CREATED)
+
+
+def post_for_change_user_email_fake(self, request):
+    serializer = self.serializer_class(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    NewEmail.objects.create(
+        user_uuid_id=request.user.uuid, email=serializer.data.get('email')
+    )
+    user = request.user
     uidb64 = urlsafe_base64_encode(force_bytes(user.uuid))
     token = PasswordResetTokenGenerator().make_token(user)
     data = {
@@ -419,7 +436,6 @@ class UserTestCase(CreateUsersTestCase):
             headers=auth_data,
             data=change_data
         )
-        print(response.json())
         self.assertEqual(response.status_code, 400)
         self.assertIn('errors', response.json().keys())
         errors = response.json().get('errors')
@@ -447,19 +463,125 @@ class UserTestCase(CreateUsersTestCase):
             headers=auth_data,
             data=change_data
         )
-        print(response.json())
         self.assertEqual(response.status_code, 400)
         self.assertIn('errors', response.json().keys())
         errors = response.json().get('errors')
         self.assertEqual(errors.get('phone_number')[0], 'Incorrect phone number. The number must consist of digits')
         self.assertEqual(errors.get('phone_number')[1], 'Ensure this field has at least 8 characters.')
+
+    def test_change_user_username(self):
+        """Редактирование юзернейма авторизированного пользователя"""
+
+        self.create_token()
+        users = self.users
+        for _, user in users.items():
+            profile = fake.simple_profile()
+            username = profile.get('username')
+            token = user.get('token')
+            auth_data = {
+                'Authorization': f'Bearer {token}'
+            }
+            change_data = {
+                'username': username
+            }
+
+            response = self.client.put(
+                path=reverse('change_username'),
+                content_type='application/json',
+                headers=auth_data,
+                data=change_data
+            )
+            self.assertEqual(response.status_code, 204)
+            response = self.client.get(
+                path=reverse('user'),
+                headers=auth_data
+            )
+            self.assertEqual(response.status_code, 200)
+            self.assertIn('data', response.json().keys())
+            user_data = response.json().get('data')
+            self.assertEqual(user_data.get('username'), username)
+
+    def test_change_user_username_with_exists_username(self):
+        """Редактирование юзернейма авторизированного пользователя
+        на уже существующей юзернейм
+        """
+
+        self.create_token()
+        users = self.users
+        user_1 = users.get('user_1')
+        exist_username = user_1.get('username')
+        user_2 = users.get('user_2')
+
+        token = user_2.get('token')
+        auth_data = {
+            'Authorization': f'Bearer {token}'
+        }
+        change_data = {
+            'username': exist_username
+        }
+        response = self.client.put(
+            path=reverse('change_username'),
+            content_type='application/json',
+            headers=auth_data,
+            data=change_data
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('errors', response.json().keys())
+        errors = response.json().get('errors')
+        self.assertEqual(errors.get('username')[0], 'A user with that username already exists.')
+
+    def test_change_user_email(self):
+        """Редактирование эл. почты авторизированного пользователя
+        """
+
+        # Monkey patching
+        ChangeUserEmailView.post = post_for_change_user_email_fake
+        self.create_token()
+        token = self.users.get('user_1').get('token')
+        new_email = fake.email()
+        user_data = {
+            'email': new_email
+        }
+        auth_data = {
+            'Authorization': f'Bearer {token}'
+        }
+        response = self.client.post(
+            path=reverse('change_email'),
+            data=user_data,
+            headers=auth_data
+        )
+        self.assertEqual(response.status_code, 201)
+        self.assertIn('data', response.json().keys())
+        data_for_update = response.json().get('data')
+        uidb64 = data_for_update.get('uidb64')
+        token = data_for_update.get('token')
+        response = self.client.put(
+            path=reverse('confirm_for_change_email', kwargs={
+                'uidb64': uidb64,
+                'token': token
+            }),
+            content_type='application/json',
+            headers=auth_data
+        )
+        print(response)
+        # self.assertEqual(response.status_code, 204)
+        # user_data = {
+        #     'username': username,
+        #     'password': new_password
+        # }
+        # response = self.client.post(
+        #     path=reverse('login'),
+        #     data=user_data
+        # )
+        # self.assertEqual(response.status_code, 200)
+        # self.assertIn('data', response.json().keys())
+        # self.assertIn('tokens', response.json().get('data').keys())
+        # tokens = response.json().get('data').get('tokens')
+        # self.assertEqual(['refresh', 'access'], list(tokens.keys()))
 # Еще нужны кейсы:
-
-# — Добавление невалидного номера
-
-# — Редактирование юзернейма
-# — Добавление уже существующего юзернейма
 
 # — Смена почты
 # — Без перехода по ссылке
 # — После перехода по ссылке
+
+# еще можно проверять токены и uid

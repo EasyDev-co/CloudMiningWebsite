@@ -12,7 +12,8 @@ from src.users.api.v1.views import (
     ChangeUserPasswordView,
     ChangeUserEmailView,
     CheckTokenForChangeUserEmailView,
-    GetUserDataView
+    GetUserDataView,
+    ChangeUserUsenameView
 )
 from rest_framework_simplejwt.views import TokenRefreshView
 
@@ -32,6 +33,7 @@ urlpatterns = [
     path('change/phone_number/', ChangeUserPhoneNumberView.as_view(), name='change_phone_number'),
     path('change/password/', ChangeUserPasswordView.as_view(), name='change_password'),
     path('change/email/', ChangeUserEmailView.as_view(), name='change_email'),
-    path('change/email/<uidb64>/<token>/', CheckTokenForChangeUserEmailView.as_view(), name='confirm_for_chane_email'),
+    path('change/email/<uidb64>/<token>/', CheckTokenForChangeUserEmailView.as_view(), name='confirm_for_change_email'),
+    path('change/username/', ChangeUserUsenameView.as_view(), name='change_username'),
     path('', GetUserDataView.as_view(), name='user')
 ]
