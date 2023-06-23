@@ -13,14 +13,14 @@ from src.users.api.v1.serializers import (
     ResendActivationAccountEmailSerializer,
     LoginUserSerializer,
     SendResetPasswordEmailSerializer,
-    CheckTokenForResetPasswordSerializer,
+    CheckNewPasswordSerializer,
     ChangeUserFirstNameSerializer,
     ChangeUserLastNameSerializer,
     ChangeUserPhoneNumberSerializer,
     ChangeUserPasswordSerializer,
     ChangeUserEmailSerializer,
-    UserTokenUIDSerializer,
-    ChangeUserUsernameSerializer
+    ChangeUserUsernameSerializer,
+    UserTokenUIDSerializer
 )
 from src.users.tasks import send_email_for_user
 from src.users.utils import (
@@ -171,38 +171,47 @@ class CheckTokenForResetPasswordView(generics.GenericAPIView):
     Проверяет переданные данные из ссылки для сброса пароля и
     валидирует новый пароль пользователя
     """
-    serializer_class = CheckTokenForResetPasswordSerializer
+    serializer_class = CheckNewPasswordSerializer
     renderer_classes = (UserDataRender,)
 
     def put(self, request, **kwargs):
         uidb64 = kwargs.get('uidb64', '')
         token = kwargs.get('token', '')
-        try:
-            uid = force_str(urlsafe_base64_decode(uidb64))
-            user = User.objects.get(pk=uid)
-        except (
-            TypeError,
-            ValueError,
-            OverflowError,
-            User.DoesNotExist,
-            DjangoUnicodeDecodeError
-        ):
-            return Response(
-                {'uuid': 'An uuid is not valid.'},
-                status=status.HTTP_401_UNAUTHORIZED
-            )
-        if not PasswordResetTokenGenerator().check_token(user, token):
-            return Response(
-                {'token': 'A token is not valid.'},
-                status=status.HTTP_401_UNAUTHORIZED
-            )
-        try:
-            user = User.objects.get(uuid=uid)
-        except User.DoesNotExist:
-            return Response(
-                data={'token': 'A token is not valid.'},
-                status=status.HTTP_404_NOT_FOUND
-            )
+        uuid_token_serializer = UserTokenUIDSerializer(
+            data={
+                'uidb64': uidb64,
+                'token': token
+            }
+        )
+        uuid_token_serializer.is_valid(raise_exception=True)
+        uuid = uuid_token_serializer.data.get('uuid')
+        # try:
+        #     uid = force_str(urlsafe_base64_decode(uidb64))
+        #     user = User.objects.get(pk=uid)
+        # except (
+        #     TypeError,
+        #     ValueError,
+        #     OverflowError,
+        #     User.DoesNotExist,
+        #     DjangoUnicodeDecodeError
+        # ):
+        #     return Response(
+        #         {'uuid': 'An uuid is not valid.'},
+        #         status=status.HTTP_401_UNAUTHORIZED
+        #     )
+        # if not PasswordResetTokenGenerator().check_token(user, token):
+        #     return Response(
+        #         {'token': 'A token is not valid.'},
+        #         status=status.HTTP_401_UNAUTHORIZED
+        #     )
+        # try:
+        #     user = User.objects.get(uuid=uid)
+        # except User.DoesNotExist:
+        #     return Response(
+        #         data={'token': 'A token is not valid.'},
+        #         status=status.HTTP_404_NOT_FOUND
+        #     )
+        user = User.objects.get(uuid=uuid)
         serializer = self.serializer_class(data=request.data, instance=user)
         serializer.is_valid(raise_exception=True)
         serializer.save()
@@ -306,52 +315,62 @@ class ChangeUserEmailView(generics.GenericAPIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class CheckTokenForChangeUserEmailView(APIView):
+class CheckTokenForChangeUserEmailView(generics.GenericAPIView):
     """
     Проверка данных в ссылке на изменение почты
     """
     permission_classes = [IsAuthenticated, ]
-    serializer_class = UserTokenUIDSerializer
     renderer_classes = (UserDataRender,)
+    serializer_class = UserTokenUIDSerializer
 
     def put(self, request, **kwargs):
         uidb64 = kwargs.get('uidb64', '')
         token = kwargs.get('token', '')
+        serializer = self.serializer_class(
+            data={
+                'uidb64': uidb64,
+                'token': token
+            }
+        )
+        serializer.is_valid(raise_exception=True)
+        # try:
+        #     uid = force_str(urlsafe_base64_decode(uidb64))
+        #     user = User.objects.get(pk=uid)
+        # except (
+        #     TypeError,
+        #     ValueError,
+        #     OverflowError,
+        #     User.DoesNotExist,
+        #     DjangoUnicodeDecodeError
+        # ):
+        #     return Response(
+        #         data={'uuid': 'An uuid is not valid.'},
+        #         status=status.HTTP_401_UNAUTHORIZED
+        #     )
+        # if not PasswordResetTokenGenerator().check_token(user, token):
+        #     return Response(
+        #         data={'token': 'A token is not valid.'},
+        #         status=status.HTTP_401_UNAUTHORIZED
+        #     )
+        serializer_data = serializer.data
+        uuid = serializer_data.get('uuid')
         try:
-            uid = force_str(urlsafe_base64_decode(uidb64))
-            user = User.objects.get(pk=uid)
-        except (
-            TypeError,
-            ValueError,
-            OverflowError,
-            User.DoesNotExist,
-            DjangoUnicodeDecodeError
-        ):
+            new_email = NewEmail.objects.filter(user_uuid_id=uuid)
+        except NewEmail.DoesNotExist:
             return Response(
-                data={'uuid': 'An uuid is not valid.'},
-                status=status.HTTP_401_UNAUTHORIZED
-            )
-        if not PasswordResetTokenGenerator().check_token(user, token):
-            return Response(
-                data={'token': 'A token is not valid.'},
-                status=status.HTTP_401_UNAUTHORIZED
-            )
-        try:
-            new_email = NewEmail.objects.filter(user_uuid_id=user.uuid)
-        except (User.DoesNotExist, NewEmail.DoesNotExist):
-            return Response(
-                data={'token': 'A token is not valid.'},
+                data={'link': 'A link is not valid.'},
                 status=status.HTTP_404_NOT_FOUND
             )
-        if str(request.user.uuid) == uid:
+        if str(request.user.uuid) == uuid:
+            user = User.objects.get(uuid=uuid)
             user.email = new_email.first().email
             user.save()
             new_email.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response(
-                data={'uuid': 'An uuid is not valid.'},
-                status=status.HTTP_401_UNAUTHORIZED
-            )
+            data={'uuid': 'An uuid is not valid.'},
+            status=status.HTTP_401_UNAUTHORIZED
+        )
 
 
 class ChangeUserUsenameView(generics.GenericAPIView):

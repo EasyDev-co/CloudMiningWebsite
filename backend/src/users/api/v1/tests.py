@@ -187,7 +187,9 @@ class UserTestCase(CreateUsersTestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn('errors', response.json().keys())
         errors = response.json().get('errors')
-        self.assertEqual(errors.get('account')[0], 'An account is not confirm.')
+        self.assertEqual(
+            errors.get('account')[0], 'An account is not confirm.'
+        )
 
     def test_create_user_and_try_activate_with_uncorrect_token(self):
         """
@@ -238,7 +240,8 @@ class UserTestCase(CreateUsersTestCase):
         # Monkey patching
         UserRegistrationView.post = fake_post_for_activation_account
         ResendActivationAccountEmailView.get = fake_get_for_activation_account
-        # меняю на пустой список, так как запрос на повторную активацию разрешен 1 раз в 1 минуту
+        # меняю на пустой список, так как запрос на повторную активацию
+        # разрешен 1 раз в 1 минуту
         ResendActivationAccountEmailView.throttle_classes = []
         profile = fake.simple_profile()
         password = fake.password()
@@ -320,10 +323,13 @@ class UserTestCase(CreateUsersTestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn('errors', response.json().keys())
         errors = response.json().get('errors')
-        self.assertEqual(errors.get('password')[
-                         0], 'The passwords entered do not match.')
-        self.assertEqual(errors.get('password_confirm')[
-                         0], 'The passwords entered do not match.')
+        self.assertEqual(
+            errors.get('password')[0], 'The passwords entered do not match.'
+        )
+        self.assertEqual(
+            errors.get('password_confirm')[0],
+            'The passwords entered do not match.'
+        )
 
     def test_create_user_with_non_unique_username(self):
         """
@@ -353,8 +359,10 @@ class UserTestCase(CreateUsersTestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn('errors', response.json().keys())
         errors = response.json().get('errors')
-        self.assertEqual(errors.get('username')[
-                         0], 'A user with that username already exists.')
+        self.assertEqual(
+            errors.get('username')[0],
+            'A user with that username already exists.'
+        )
 
     def test_create_user_with_invalid_passwords(self):
         """
@@ -381,10 +389,12 @@ class UserTestCase(CreateUsersTestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn('errors', response.json().keys())
         errors = response.json().get('errors')
-        self.assertEqual(errors.get('password')[
-                         0], 'This password is too common.')
-        self.assertEqual(errors.get('password')[
-                         1], 'This password is entirely numeric.')
+        self.assertEqual(
+            errors.get('password')[0], 'This password is too common.'
+        )
+        self.assertEqual(
+            errors.get('password')[1], 'This password is entirely numeric.'
+        )
 
     def test_create_user_with_non_unique_email(self):
         """
@@ -415,8 +425,9 @@ class UserTestCase(CreateUsersTestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn('errors', response.json().keys())
         errors = response.json().get('errors')
-        self.assertEqual(errors.get('email')[
-                         0], 'A user with that email already exists.')
+        self.assertEqual(
+            errors.get('email')[0], 'A user with that email already exists.'
+        )
 
     def test_create_token(self):
         """Тестирует вход в аккаунт и получаение токенов"""
@@ -427,7 +438,8 @@ class UserTestCase(CreateUsersTestCase):
         """Тестирует сброс пароля"""
         # Monkey patching
         ResetPasswordView.post = fake_post_for_reset_password
-        # меняю на пустой список, так как запрос на повторную активацию разрешен 1 раз в 1 минуту
+        # меняю на пустой список, так как запрос на повторную активацию
+        # разрешен 1 раз в 1 минуту
         ResetPasswordView.throttle_classes = []
         email = self.users.get('user_1').get('email')
         username = self.users.get('user_1').get('username')
@@ -476,7 +488,8 @@ class UserTestCase(CreateUsersTestCase):
         """Тестирует сброс пароля c неверным uidb64"""
         # Monkey patching
         ResetPasswordView.post = fake_post_for_reset_password
-        # меняю на пустой список, так как запрос на повторную активацию разрешен 1 раз в 1 минуту
+        # меняю на пустой список, так как запрос на повторную активацию
+        # разрешен 1 раз в 1 минуту
         ResetPasswordView.throttle_classes = []
         email = self.users.get('user_1').get('email')
         new_password = fake.password()
@@ -513,7 +526,8 @@ class UserTestCase(CreateUsersTestCase):
         """Тестирует сброс пароля"""
         # Monkey patching
         ResetPasswordView.post = fake_post_for_reset_password
-        # меняю на пустой список, так как запрос на повторную активацию разрешен 1 раз в 1 минуту
+        # меняю на пустой список, так как запрос на повторную активацию
+        # разрешен 1 раз в 1 минуту
         ResetPasswordView.throttle_classes = []
         email = self.users.get('user_1').get('email')
         new_password = fake.password()
@@ -625,9 +639,8 @@ class UserTestCase(CreateUsersTestCase):
 
         self.create_token()
         users = self.users
-        index = 1
         for _, user in users.items():
-            phone_number = fake.msisdn() + str(index)
+            phone_number = '8' + fake.msisdn()
             token = user.get('token')
             auth_data = {
                 'Authorization': f'Bearer {token}'
@@ -653,9 +666,8 @@ class UserTestCase(CreateUsersTestCase):
             self.assertIn('data', response.json().keys())
             user_data = response.json().get('data')
             self.assertEqual(user_data.get('phone_number'), phone_number)
-            index += 1
 
-    def test_change__phone_number_to_non_unique_phone_number(self):
+    def test_change_phone_number_to_non_unique_phone_number(self):
         """
         Тестирует изменение номера телефона авторизованного пользователя
         на неуникальный номер телефона
@@ -683,8 +695,10 @@ class UserTestCase(CreateUsersTestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn('errors', response.json().keys())
         errors = response.json().get('errors')
-        self.assertEqual(errors.get('phone_number')[
-                         0], 'An current phone number already exists.')
+        self.assertEqual(
+            errors.get('phone_number')[0],
+            'An current phone number already exists.'
+        )
 
     def test_change_phone_number_to_invalid_phone_number(self):
         """
@@ -712,10 +726,15 @@ class UserTestCase(CreateUsersTestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn('errors', response.json().keys())
         errors = response.json().get('errors')
-        self.assertEqual(errors.get('phone_number')[
-                         0], 'Incorrect phone number. The number must consist of digits.')
-        self.assertEqual(errors.get('phone_number')[
-                         1], 'Ensure this field has at least 8 characters.')
+        self.assertEqual(
+            errors.get('phone_number')[0],
+            'Incorrect phone number. The number must consist of digits and the\
+ first digit cannot be zero.'
+        )
+        self.assertEqual(
+            errors.get('phone_number')[1],
+            'Ensure this field has at least 8 characters.'
+        )
 
     def test_change_username(self):
         """

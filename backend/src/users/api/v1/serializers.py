@@ -1,19 +1,18 @@
 import jwt
 from rest_framework import serializers, exceptions
-from django.contrib.auth.password_validation import validate_password
-from django.core import exceptions as django_exceptions
 from rest_framework.settings import api_settings
-from django.contrib.auth import get_user_model, authenticate
-from django.core.validators import RegexValidator
-from django.utils.http import urlsafe_base64_decode
-from django.utils.encoding import force_str, DjangoUnicodeDecodeError
+from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
-
-
+from django.contrib.auth import get_user_model, authenticate
+from django.core import exceptions as django_exceptions
+from django.core.validators import RegexValidator
 from django.core.validators import EmailValidator
+from django.utils.encoding import force_str, DjangoUnicodeDecodeError
+from django.utils.http import urlsafe_base64_decode
 from django.conf import settings
+
 from src.users.api.v1.validation_pattern import PHONE_NUMBER_PATTERN
-from src.users.models import NewEmail
+
 
 User = get_user_model()
 
@@ -41,6 +40,7 @@ class UserRegisterSerializer(serializers.ModelSerializer):
 
         if password == password_confirm:
             try:
+
                 validate_password(password, user)
             except django_exceptions.ValidationError as e:
                 serializer_error = serializers.as_serializer_error(e)
@@ -182,7 +182,7 @@ class SendResetPasswordEmailSerializer(serializers.ModelSerializer):
         return validated_data
 
 
-class CheckTokenForResetPasswordSerializer(serializers.ModelSerializer):
+class CheckNewPasswordSerializer(serializers.ModelSerializer):
     """
     Сериализация паролей при сбросе старого пароля
     """
@@ -261,10 +261,11 @@ class ChangeUserPhoneNumberSerializer(serializers.ModelSerializer):
     """
     phone_number = serializers.CharField(validators=[RegexValidator(
         regex=PHONE_NUMBER_PATTERN,
-        message='Incorrect phone number. The number must consist of digits.'
+        message='Incorrect phone number. The number must consist of digits and\
+ the first digit cannot be zero.'
     ), ],
         min_length=8,
-        max_length=15
+        max_length=15,
     )
 
     class Meta:
@@ -357,12 +358,41 @@ class ChangeUserEmailSerializer(serializers.ModelSerializer):
         return validated_data
 
 
-class UserTokenUIDSerializer(serializers.Serializer):
+class UserTokenUIDSerializer(serializers.ModelSerializer):
     """
-    Сериализация токена и uidb64 для подтверждения смены почты
+    Сериализация токена и uidb64
     """
-    token = serializers.CharField()
-    uidb64 = serializers.CharField()
+    token = serializers.CharField(write_only=True)
+    uidb64 = serializers.CharField(write_only=True)
+    uuid = serializers.CharField(read_only=True)
+
+    class Meta:
+        model = User
+        fields = ['token', 'uidb64', 'uuid']
+
+    def validate(self, attrs):
+        uidb64 = attrs.get('uidb64', '')
+        token = attrs.get('token', '')
+        try:
+            uid = force_str(urlsafe_base64_decode(uidb64))
+            user = self.Meta.model.objects.get(pk=uid)
+        except (
+            TypeError,
+            ValueError,
+            OverflowError,
+            User.DoesNotExist,
+            DjangoUnicodeDecodeError
+        ):
+            raise exceptions.NotAuthenticated(
+                detail={'uuid': 'An uuid is not valid.'},
+            )
+        if not PasswordResetTokenGenerator().check_token(user, token):
+            raise exceptions.NotAuthenticated(
+                detail={'token': 'A token is not valid.'}
+            )
+        return {
+            'uuid': uid
+        }
 
 
 class ChangeUserUsernameSerializer(serializers.ModelSerializer):

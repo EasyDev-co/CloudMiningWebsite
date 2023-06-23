@@ -13,12 +13,12 @@ class CreateUsersTestCase(TestCase):
 
     def setUp(self):
         self.users = {}
-        for index in range(1, 3):
+        for index in range(1, 5):
             profile = fake.simple_profile()
             username = profile.get('username')
             password = fake.password()
             email = fake.email()
-            phone_number = fake.msisdn() + str(index)
+            phone_number = '8' + fake.msisdn()
             User.objects.create(
                 username=username,
                 email=email,
