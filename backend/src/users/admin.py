@@ -4,6 +4,7 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
+
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
     list_display = (
@@ -13,5 +14,3 @@ class UserAdmin(admin.ModelAdmin):
         'email',
         'phone_number'
     )
-    # readonly_fields = ['author', 'text', 'created_at']
-

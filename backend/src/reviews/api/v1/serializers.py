@@ -1,6 +1,6 @@
 from rest_framework import serializers, exceptions
 from src.reviews.models import Review
-from src.users.api.v1.constants import PHONE_NUMBER_PATTERN
+from src.users.api.v1.validation_pattern import PHONE_NUMBER_PATTERN
 from django.core.validators import RegexValidator
 
 

@@ -5,17 +5,21 @@ from django.core import exceptions as django_exceptions
 from rest_framework.settings import api_settings
 from django.contrib.auth import get_user_model, authenticate
 from django.core.validators import RegexValidator
+from django.utils.http import urlsafe_base64_decode
+from django.utils.encoding import force_str, DjangoUnicodeDecodeError
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
 
 
 from django.core.validators import EmailValidator
 from django.conf import settings
-from src.users.api.v1.constants import PHONE_NUMBER_PATTERN
+from src.users.api.v1.validation_pattern import PHONE_NUMBER_PATTERN
+from src.users.models import NewEmail
 
 User = get_user_model()
 
 
 class UserRegisterSerializer(serializers.ModelSerializer):
-    """Сериализация при регистрации пользователя"""
+    """Сериализация имени пользователя и паролей."""
 
     password = serializers.CharField(
         style={"input_type": "password"}, write_only=True
@@ -60,7 +64,12 @@ class UserRegisterSerializer(serializers.ModelSerializer):
 
 
 class UserTokenSerializer(serializers.Serializer):
-    """Сериалайзер для валидации токена"""
+    """
+    Сериализация токена.
+
+    После валидации в случае успеха вернет токен и uuid
+    пользователя.
+    """
     token = serializers.CharField(write_only=True)
     uuid = serializers.CharField(read_only=True)
 
@@ -91,6 +100,9 @@ class UserTokenSerializer(serializers.Serializer):
 
 
 class ResendActivationAccountEmailSerializer(serializers.ModelSerializer):
+    """
+    Сериализация адреса эл.почты при повторной активации аккаунта.
+    """
     email = serializers.EmailField(validators=[EmailValidator, ])
 
     class Meta:
@@ -114,7 +126,11 @@ class ResendActivationAccountEmailSerializer(serializers.ModelSerializer):
 
 
 class LoginUserSerializer(serializers.ModelSerializer):
+    """
+    Сериализация юзернейма и пароля.
 
+    В случае успеха вернет access и refresh токены.
+    """
     password = serializers.CharField(
         style={"input_type": "password"}, write_only=True
     )
@@ -145,6 +161,9 @@ class LoginUserSerializer(serializers.ModelSerializer):
 
 
 class SendResetPasswordEmailSerializer(serializers.ModelSerializer):
+    """
+    Сериализация адреса эл.почты при сбросе пароля.
+    """
     email = serializers.EmailField(validators=[EmailValidator, ])
 
     class Meta:
@@ -164,6 +183,9 @@ class SendResetPasswordEmailSerializer(serializers.ModelSerializer):
 
 
 class CheckTokenForResetPasswordSerializer(serializers.ModelSerializer):
+    """
+    Сериализация паролей при сбросе старого пароля
+    """
     password = serializers.CharField(
         style={"input_type": "password"}
     )
@@ -205,6 +227,9 @@ class CheckTokenForResetPasswordSerializer(serializers.ModelSerializer):
 
 
 class ChangeUserFirstNameSerializer(serializers.ModelSerializer):
+    """
+    Сериализация имени пользователя при ее изменении
+    """
     class Meta:
         model = User
         fields = ['first_name', ]
@@ -216,6 +241,9 @@ class ChangeUserFirstNameSerializer(serializers.ModelSerializer):
 
 
 class ChangeUserLastNameSerializer(serializers.ModelSerializer):
+    """
+    Сериализация фамилии пользователя при ее изменении
+    """
     class Meta:
         model = User
         fields = ['last_name', ]
@@ -228,6 +256,9 @@ class ChangeUserLastNameSerializer(serializers.ModelSerializer):
 
 
 class ChangeUserPhoneNumberSerializer(serializers.ModelSerializer):
+    """
+    Сериализация номера телефона пользователя при его изменении
+    """
     phone_number = serializers.CharField(validators=[RegexValidator(
         regex=PHONE_NUMBER_PATTERN,
         message='Incorrect phone number. The number must consist of digits.'
@@ -257,6 +288,9 @@ class ChangeUserPhoneNumberSerializer(serializers.ModelSerializer):
 
 
 class ChangeUserPasswordSerializer(serializers.ModelSerializer):
+    """
+    Сериализация нового пароля пользователя при его изменении
+    """
     current_password = serializers.CharField(
         style={"input_type": "password"}, write_only=True
     )
@@ -304,6 +338,9 @@ class ChangeUserPasswordSerializer(serializers.ModelSerializer):
 
 
 class ChangeUserEmailSerializer(serializers.ModelSerializer):
+    """
+    Сериализация эл.почты пользователя при ее изменении
+    """
     email = serializers.EmailField(validators=[EmailValidator, ])
 
     class Meta:
@@ -321,9 +358,11 @@ class ChangeUserEmailSerializer(serializers.ModelSerializer):
 
 
 class UserTokenUIDSerializer(serializers.Serializer):
-    """Сериалайзер для валидации токена и uid"""
+    """
+    Сериализация токена и uidb64 для подтверждения смены почты
+    """
     token = serializers.CharField()
-    uid64 = serializers.CharField()
+    uidb64 = serializers.CharField()
 
 
 class ChangeUserUsernameSerializer(serializers.ModelSerializer):

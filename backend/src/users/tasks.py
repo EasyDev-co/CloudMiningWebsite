@@ -8,7 +8,13 @@ User = get_user_model()
 
 @app.task(bind=True, default_retry_delay=5 * 60)
 def send_email_for_user(self, data):
-    print('Попал в send_email task')
+    """
+    Добавляет отправку сообщения пользователю
+    в очередь Celery
+
+    При ошибке повторная попытка отправить сообщение
+    произойдет через 1 минуту
+    """
     try:
         send_email(
             data=data

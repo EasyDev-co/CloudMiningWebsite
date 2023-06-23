@@ -35,6 +35,9 @@ User = get_user_model()
 
 
 class GetUserDataView(APIView):
+    """
+    Возвращает данные авторизированного пользователя
+    """
     permission_classes = [IsAuthenticated, ]
     renderer_classes = (UserDataRender,)
 
@@ -56,11 +59,12 @@ class GetUserDataView(APIView):
 class UserRegistrationView(generics.GenericAPIView):
     """
     Регистрация пользователя.
+
     После отправки запроса на переданный адрес эл.почты
     придет письмо с ссылкой для активации аккаунта
 
-    Если не активировать, аккаунт, то дальнейшее взаимодействие
-    с ним невозможно
+    Если не активировать, аккаунт, то пользователь не
+    сможет залогиниться
     """
 
     serializer_class = UserRegisterSerializer
@@ -86,7 +90,7 @@ class UserRegistrationView(generics.GenericAPIView):
 
 class ResendActivationAccountEmailView(generics.GenericAPIView):
     """
-    Повторная отправка письма для подтверждения аккаунта
+    Повторная отправка письма для подтверждения аккаунта.
     Запрос на данный эндпоинт может быть отправлен 1 раз в 1 минуту
     """
     serializer_class = ResendActivationAccountEmailSerializer
@@ -109,7 +113,7 @@ class ResendActivationAccountEmailView(generics.GenericAPIView):
 
 class UserActivationAccountView(APIView):
     """
-    Обработка ссылки для активации аккаунта
+    Обработка ссылки для активации аккаунта.
     """
     serializer_class = UserTokenSerializer
     renderer_classes = (UserDataRender,)
@@ -124,8 +128,11 @@ class UserActivationAccountView(APIView):
 
 
 class UserLoginView(generics.GenericAPIView):
-    """Авторизация пользователя в системе
-    и последующее получение токенов"""
+    """
+    Авторизация пользователя в системе.
+
+    Вернет refresh и access токены
+    """
     serializer_class = LoginUserSerializer
     renderer_classes = (UserDataRender,)
 
@@ -136,7 +143,8 @@ class UserLoginView(generics.GenericAPIView):
 
 
 class ResetPasswordView(generics.GenericAPIView):
-    """Сброс пароля.
+    """
+    Сброс пароля.
     После отправки запроса с валидным адресом эл.почты,
     на нее будет отправленно письмо с ссылкой на для ввода нового пароля
     """
