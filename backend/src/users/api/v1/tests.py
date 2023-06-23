@@ -22,7 +22,12 @@ User = get_user_model()
 fake = Faker()
 
 
-def post_for_activation_account_email_fake(self, request):
+def fake_post_for_activation_account(self, request):
+    """
+    Функция отдает в качестве результата
+    данные, которые используются при отправке
+    письма для активации аккаунта
+    """
     user = request.data
     serializer = self.serializer_class(data=user)
     serializer.is_valid(raise_exception=True)
@@ -34,7 +39,13 @@ def post_for_activation_account_email_fake(self, request):
     return Response(user_data, status=status.HTTP_201_CREATED)
 
 
-def get_for_activation_account_email_fake(self, request, email):
+def fake_get_for_activation_account(self, request, email):
+    """
+    Функция отдает в качестве результата
+    данные, которые используются
+    при повторной отправки письма
+    для активации аккаунта
+    """
     serializer = self.serializer_class(data={'email': email})
     serializer.is_valid(raise_exception=True)
     user_data = serializer.data
@@ -44,7 +55,12 @@ def get_for_activation_account_email_fake(self, request, email):
     return Response(data=user_data, status=status.HTTP_201_CREATED)
 
 
-def post_for_reset_password_email_fake(self, request):
+def fake_post_for_reset_password(self, request):
+    """
+    Функция отдает в качестве результата
+    данные, которые используются при отправке
+    письма для сброса пароля
+    """
     serializer = self.serializer_class(data=request.data)
     serializer.is_valid(raise_exception=True)
     user = User.objects.get(email=serializer.data.get('email'))
@@ -57,7 +73,12 @@ def post_for_reset_password_email_fake(self, request):
     return Response(data=data, status=status.HTTP_201_CREATED)
 
 
-def post_for_change_user_email_fake(self, request):
+def fake_post_for_change_user_email_fake(self, request):
+    """
+    Функция отдает в качестве результата
+    данные, которые используются при отправке
+    письма для изменения почты
+    """
     serializer = self.serializer_class(data=request.data)
     serializer.is_valid(raise_exception=True)
     NewEmail.objects.create(
@@ -75,14 +96,14 @@ def post_for_change_user_email_fake(self, request):
 
 class UserTestCase(CreateUsersTestCase):
 
-    def test_create_user_and_activate_acc(self):
+    def test_create_user_and_activate_account(self):
         """
-        — Создание аккаунта
-        — Активация аккаунта
+        Тестирует регистрацию пользователя
+        и последующую активацию аккаунта
         """
 
         # Monkey patching
-        UserRegistrationView.post = post_for_activation_account_email_fake
+        UserRegistrationView.post = fake_post_for_activation_account
         profile = fake.simple_profile()
         password = fake.password()
         username = profile.get('username')
@@ -110,16 +131,29 @@ class UserTestCase(CreateUsersTestCase):
         )
         self.assertEqual(response.status_code, 204)
 
-    def test_resend_activation_email(self):
+        # Авторизируемся
+        auth_data = {
+            'username': username,
+            'password': password
+        }
+        response = self.client.post(
+            path=reverse('login'),
+            data=auth_data
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('data', response.json().keys())
+        self.assertIn('tokens', response.json().get('data').keys())
+        tokens = response.json().get('data').get('tokens')
+        self.assertEqual(['refresh', 'access'], list(tokens.keys()))
+
+    def test_create_user_without_activation_account(self):
         """
-        — Создание пользователя
-        — Повторное создание токена для активации акаунта
-        — Активация аккаунта
+        Тестирует регистрацию пользователя
+        и попытку авторизироваться без активации аккаунта
         """
 
         # Monkey patching
-        UserRegistrationView.post = post_for_activation_account_email_fake
-        ResendActivationAccountEmailView.get = get_for_activation_account_email_fake
+        UserRegistrationView.post = fake_post_for_activation_account
         profile = fake.simple_profile()
         password = fake.password()
         username = profile.get('username')
@@ -140,6 +174,93 @@ class UserTestCase(CreateUsersTestCase):
         self.assertEqual(response.status_code, 201)
         self.assertEqual(new_user.get('username'), username)
         self.assertEqual(new_user.get('email'), email)
+
+        # Авторизируемся
+        auth_data = {
+            'username': username,
+            'password': password
+        }
+        response = self.client.post(
+            path=reverse('login'),
+            data=auth_data
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('errors', response.json().keys())
+        errors = response.json().get('errors')
+        self.assertEqual(errors.get('account')[0], 'An account is not confirm.')
+
+    def test_create_user_and_try_activate_with_uncorrect_token(self):
+        """
+        Тестирует регистрацию пользователя
+        и проверяет попытку активировать аккаунт
+        с помощью неверного токена
+        """
+
+        # Monkey patching
+        UserRegistrationView.post = fake_post_for_activation_account
+        profile = fake.simple_profile()
+        password = fake.password()
+        username = profile.get('username')
+        email = fake.email()
+        new_user = {
+            'username': username,
+            'email': email,
+            'password': password,
+            'password_confirm': password
+        }
+        # Создаем пользователя
+        response = self.client.post(
+            path=reverse('register'),
+            data=new_user
+        )
+        self.assertIn('data', response.json().keys())
+        new_user = response.json().get('data')
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(new_user.get('username'), username)
+        self.assertEqual(new_user.get('email'), email)
+
+        # Активируем аккаунт пользователя
+        token = new_user.get('token') + 'test1234'
+        response = self.client.get(
+            path=reverse('activation', kwargs={'token': token})
+        )
+        self.assertEqual(response.status_code, 406)
+        self.assertIn('errors', response.json().keys())
+        errors = response.json().get('errors')
+        self.assertEqual(errors.get('link'), 'An activation link is invalid.')
+
+    def test_resend_activation_email(self):
+        """
+        Тестирует повторную отправку письма
+        для активации аккаунта
+        """
+
+        # Monkey patching
+        UserRegistrationView.post = fake_post_for_activation_account
+        ResendActivationAccountEmailView.get = fake_get_for_activation_account
+        # меняю на пустой список, так как запрос на повторную активацию разрешен 1 раз в 1 минуту
+        ResendActivationAccountEmailView.throttle_classes = []
+        profile = fake.simple_profile()
+        password = fake.password()
+        username = profile.get('username')
+        email = fake.email()
+        new_user = {
+            'username': username,
+            'email': email,
+            'password': password,
+            'password_confirm': password
+        }
+        # Создаем пользователя
+        response = self.client.post(
+            path=reverse('register'),
+            data=new_user
+        )
+        self.assertIn('data', response.json().keys())
+        new_user = response.json().get('data')
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(new_user.get('username'), username)
+        self.assertEqual(new_user.get('email'), email)
+
         # Отправляем повторно email для активации
         response = self.client.get(
             path=reverse('resend_activation', kwargs={'email': email})
@@ -148,6 +269,7 @@ class UserTestCase(CreateUsersTestCase):
         resend_data = response.json().get('data')
         self.assertNotEqual(new_user.get('token'), resend_data.get('token'))
         self.assertEqual(response.status_code, 201)
+
         # Активируем аккаунт пользователя
         response = self.client.get(
             path=reverse('activation', kwargs={
@@ -155,10 +277,30 @@ class UserTestCase(CreateUsersTestCase):
         )
         self.assertEqual(response.status_code, 204)
 
-    def test_create_user_non_equal_passwords(self):
-        """Создание аккаунта с разными паролями"""
-        UserRegistrationView.post = post_for_activation_account_email_fake
-        ResendActivationAccountEmailView.get = get_for_activation_account_email_fake
+        # Авторизируемся
+        auth_data = {
+            'username': username,
+            'password': password
+        }
+        response = self.client.post(
+            path=reverse('login'),
+            data=auth_data
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('data', response.json().keys())
+        self.assertIn('tokens', response.json().get('data').keys())
+        tokens = response.json().get('data').get('tokens')
+        self.assertEqual(['refresh', 'access'], list(tokens.keys()))
+
+    def test_create_user_with_non_equal_passwords(self):
+        """
+        Тестирует регистрацию пользователя
+        в случае когда пользователь вводит разные
+        пароли
+        """
+        # Monkey patching
+        UserRegistrationView.post = fake_post_for_activation_account
+
         profile = fake.simple_profile()
         password_1 = fake.password()
         password_2 = fake.password()
@@ -183,12 +325,16 @@ class UserTestCase(CreateUsersTestCase):
         self.assertEqual(errors.get('password_confirm')[
                          0], 'The passwords entered do not match.')
 
-    def test_create_user_with_exists_username(self):
-        """Создание аккаунта c уже существующим username"""
+    def test_create_user_with_non_unique_username(self):
+        """
+        Тестирует регистрацию пользователя
+        с неуникальным юзернеймом
+        """
+        # Monkey patching
+        UserRegistrationView.post = fake_post_for_activation_account
+
         users = self.users
         user_1 = users.get('user_1')
-        UserRegistrationView.post = post_for_activation_account_email_fake
-        ResendActivationAccountEmailView.get = get_for_activation_account_email_fake
         password_1 = fake.password()
         password_2 = fake.password()
         username = user_1.get('username')
@@ -211,9 +357,13 @@ class UserTestCase(CreateUsersTestCase):
                          0], 'A user with that username already exists.')
 
     def test_create_user_with_invalid_passwords(self):
-        """Создание аккаунта c невалидными паролями"""
-        UserRegistrationView.post = post_for_activation_account_email_fake
-        ResendActivationAccountEmailView.get = get_for_activation_account_email_fake
+        """
+        Тестирует регистрацию пользователя с
+        невалидными паролями
+        """
+        # Monkey patching
+        UserRegistrationView.post = fake_post_for_activation_account
+
         profile = fake.simple_profile()
         username = profile.get('username')
         email = fake.email()
@@ -236,13 +386,17 @@ class UserTestCase(CreateUsersTestCase):
         self.assertEqual(errors.get('password')[
                          1], 'This password is entirely numeric.')
 
-    def test_create_user_with_exists_email(self):
-        """Создание аккаунта c уже существующим email"""
+    def test_create_user_with_non_unique_email(self):
+        """
+        Тестирует регистрацию пользователя
+        с неуникальной почтой
+        """
+        # Monkey patching
+        UserRegistrationView.post = fake_post_for_activation_account
+
         profile = fake.simple_profile()
         users = self.users
         user_1 = users.get('user_1')
-        UserRegistrationView.post = post_for_activation_account_email_fake
-        ResendActivationAccountEmailView.get = get_for_activation_account_email_fake
         password_1 = fake.password()
         password_2 = fake.password()
         username = profile.get('username')
@@ -265,15 +419,15 @@ class UserTestCase(CreateUsersTestCase):
                          0], 'A user with that email already exists.')
 
     def test_create_token(self):
-        """Testing token generation"""
+        """Тестирует вход в аккаунт и получаение токенов"""
 
         self.create_token()
 
     def test_reset_password(self):
-        """Test resetting the password and creating a new password"""
-
+        """Тестирует сброс пароля"""
         # Monkey patching
-        ResetPasswordView.post = post_for_reset_password_email_fake
+        ResetPasswordView.post = fake_post_for_reset_password
+        # меняю на пустой список, так как запрос на повторную активацию разрешен 1 раз в 1 минуту
         ResetPasswordView.throttle_classes = []
         email = self.users.get('user_1').get('email')
         username = self.users.get('user_1').get('username')
@@ -307,6 +461,7 @@ class UserTestCase(CreateUsersTestCase):
             'username': username,
             'password': new_password
         }
+        # Авторизируемся
         response = self.client.post(
             path=reverse('login'),
             data=user_data
@@ -317,8 +472,84 @@ class UserTestCase(CreateUsersTestCase):
         tokens = response.json().get('data').get('tokens')
         self.assertEqual(['refresh', 'access'], list(tokens.keys()))
 
-    def test_change_user_first_name(self):
-        """Редактирование имени авторизованного пользователя"""
+    def test_reset_password_with_invalid_uidb64(self):
+        """Тестирует сброс пароля c неверным uidb64"""
+        # Monkey patching
+        ResetPasswordView.post = fake_post_for_reset_password
+        # меняю на пустой список, так как запрос на повторную активацию разрешен 1 раз в 1 минуту
+        ResetPasswordView.throttle_classes = []
+        email = self.users.get('user_1').get('email')
+        new_password = fake.password()
+        user_data = {
+            'email': email
+        }
+        response = self.client.post(
+            path=reverse('send_email_for_reset'),
+            data=user_data
+        )
+        self.assertEqual(response.status_code, 201)
+        self.assertIn('data', response.json().keys())
+        reset_data = response.json().get('data')
+        uidb64 = 'test1234'
+        token = reset_data.get('token')
+        new_password_data = {
+            'password': new_password,
+            'password_confirm': new_password
+        }
+        response = self.client.put(
+            path=reverse('confirm_for_reset_password', kwargs={
+                'uidb64': uidb64,
+                'token': token
+            }),
+            content_type='application/json',
+            data=new_password_data
+        )
+        self.assertEqual(response.status_code, 401)
+        self.assertIn('errors', response.json().keys())
+        errors = response.json().get('errors')
+        self.assertEqual(errors.get('uuid'), 'An uuid is not valid.')
+
+    def test_reset_password_with_invalid_token(self):
+        """Тестирует сброс пароля"""
+        # Monkey patching
+        ResetPasswordView.post = fake_post_for_reset_password
+        # меняю на пустой список, так как запрос на повторную активацию разрешен 1 раз в 1 минуту
+        ResetPasswordView.throttle_classes = []
+        email = self.users.get('user_1').get('email')
+        new_password = fake.password()
+        user_data = {
+            'email': email
+        }
+        response = self.client.post(
+            path=reverse('send_email_for_reset'),
+            data=user_data
+        )
+        self.assertEqual(response.status_code, 201)
+        self.assertIn('data', response.json().keys())
+        reset_data = response.json().get('data')
+        uidb64 = reset_data.get('uidb64')
+        token = 'test1234'
+        new_password_data = {
+            'password': new_password,
+            'password_confirm': new_password
+        }
+        response = self.client.put(
+            path=reverse('confirm_for_reset_password', kwargs={
+                'uidb64': uidb64,
+                'token': token
+            }),
+            content_type='application/json',
+            data=new_password_data
+        )
+        self.assertEqual(response.status_code, 401)
+        self.assertIn('errors', response.json().keys())
+        errors = response.json().get('errors')
+        self.assertEqual(errors.get('token'), 'A token is not valid.')
+
+    def test_change_first_name(self):
+        """
+        Тестирует изменение имени авторизованного пользователя
+        """
         self.create_token()
         users = self.users
         for _, user in users.items():
@@ -340,6 +571,8 @@ class UserTestCase(CreateUsersTestCase):
                 data=change_data
             )
             self.assertEqual(response.status_code, 204)
+
+            # проверяем смену данных
             response = self.client.get(
                 path=reverse('user'),
                 headers=auth_data
@@ -349,8 +582,10 @@ class UserTestCase(CreateUsersTestCase):
             user_data = response.json().get('data')
             self.assertEqual(user_data.get('first_name'), first_name)
 
-    def test_change_user_last_name(self):
-        """Редактирование фамилии авторизованного пользователя"""
+    def test_change_last_name(self):
+        """
+        Тестирует изменение фамилии авторизованного пользователя
+        """
         self.create_token()
         users = self.users
         for _, user in users.items():
@@ -372,6 +607,8 @@ class UserTestCase(CreateUsersTestCase):
                 data=change_data
             )
             self.assertEqual(response.status_code, 204)
+
+            # проверяем смену данных
             response = self.client.get(
                 path=reverse('user'),
                 headers=auth_data
@@ -381,13 +618,16 @@ class UserTestCase(CreateUsersTestCase):
             user_data = response.json().get('data')
             self.assertEqual(user_data.get('last_name'), last_name)
 
-    def test_change_user_phone_number(self):
-        """Редактирование номера телефона авторизованного пользователя"""
+    def test_change_phone_number(self):
+        """
+        Тестирует изменение номера телефона авторизованного пользователя
+        """
 
         self.create_token()
         users = self.users
+        index = 1
         for _, user in users.items():
-            phone_number = fake.msisdn()
+            phone_number = fake.msisdn() + str(index)
             token = user.get('token')
             auth_data = {
                 'Authorization': f'Bearer {token}'
@@ -403,6 +643,8 @@ class UserTestCase(CreateUsersTestCase):
                 data=change_data
             )
             self.assertEqual(response.status_code, 204)
+
+            # проверяем смену данных
             response = self.client.get(
                 path=reverse('user'),
                 headers=auth_data
@@ -411,10 +653,12 @@ class UserTestCase(CreateUsersTestCase):
             self.assertIn('data', response.json().keys())
             user_data = response.json().get('data')
             self.assertEqual(user_data.get('phone_number'), phone_number)
+            index += 1
 
-    def test_change_user_phone_number_with_exist_phone_number(self):
-        """Редактирование номера телефона авторизованного пользователя
-        с уже существующим номером
+    def test_change__phone_number_to_non_unique_phone_number(self):
+        """
+        Тестирует изменение номера телефона авторизованного пользователя
+        на неуникальный номер телефона
         """
 
         self.create_token()
@@ -442,8 +686,9 @@ class UserTestCase(CreateUsersTestCase):
         self.assertEqual(errors.get('phone_number')[
                          0], 'An current phone number already exists.')
 
-    def test_change_user_phone_number_with_invalid_phone_number(self):
-        """Редактирование номера телефона авторизованного пользователя
+    def test_change_phone_number_to_invalid_phone_number(self):
+        """
+        Тестирует изменение номера телефона авторизованного пользователя
         на невалидный номер
         """
 
@@ -472,8 +717,10 @@ class UserTestCase(CreateUsersTestCase):
         self.assertEqual(errors.get('phone_number')[
                          1], 'Ensure this field has at least 8 characters.')
 
-    def test_change_user_username(self):
-        """Редактирование юзернейма авторизированного пользователя"""
+    def test_change_username(self):
+        """
+        Тестирует изменение юзернейма авторизированного пользователя
+        """
 
         self.create_token()
         users = self.users
@@ -495,6 +742,8 @@ class UserTestCase(CreateUsersTestCase):
                 data=change_data
             )
             self.assertEqual(response.status_code, 204)
+
+            # проверяем смену данных
             response = self.client.get(
                 path=reverse('user'),
                 headers=auth_data
@@ -504,9 +753,10 @@ class UserTestCase(CreateUsersTestCase):
             user_data = response.json().get('data')
             self.assertEqual(user_data.get('username'), username)
 
-    def test_change_user_username_with_exists_username(self):
-        """Редактирование юзернейма авторизированного пользователя
-        на уже существующей юзернейм
+    def test_change_username_to_non_unique_username(self):
+        """
+        Тестирует изменениние юзернейма авторизированного пользователя
+        на неуникальный юзернейм
         """
 
         self.create_token()
@@ -534,12 +784,14 @@ class UserTestCase(CreateUsersTestCase):
         self.assertEqual(errors.get('username')[
                          0], 'A user with that username already exists.')
 
-    def test_change_user_email(self):
-        """Редактирование эл. почты авторизированного пользователя
+    def test_change_email_with_confirm_new_email(self):
+        """
+        Тестирует изменение почты авторизированного пользователя
+        с подтверждением нового адреса почты
         """
 
         # Monkey patching
-        ChangeUserEmailView.post = post_for_change_user_email_fake
+        ChangeUserEmailView.post = fake_post_for_change_user_email_fake
         self.create_token()
         token = self.users.get('user_1').get('token')
         new_email = fake.email()
@@ -559,6 +811,8 @@ class UserTestCase(CreateUsersTestCase):
         data_for_update = response.json().get('data')
         uidb64 = data_for_update.get('uidb64')
         token = data_for_update.get('token')
+
+        # подтверждаем почту
         response = self.client.put(
             path=reverse('confirm_for_change_email', kwargs={
                 'uidb64': uidb64,
@@ -567,6 +821,8 @@ class UserTestCase(CreateUsersTestCase):
             content_type='application/json',
             headers=auth_data
         )
+
+        # проверяем смену данных
         self.assertEqual(response.status_code, 204)
         response = self.client.get(
             path=reverse('user'),
@@ -577,13 +833,14 @@ class UserTestCase(CreateUsersTestCase):
         user_data = response.json().get('data')
         self.assertEqual(user_data.get('email'), new_email)
 
-    def test_change_user_email_without_link(self):
-        """Редактирование эл. почты авторизированного пользователя
-        без перехода по ссылке
+    def test_change_user_email_without_clicking_on_the_link(self):
+        """
+        Тестирует изменение почты авторизированного пользователя
+        без перехода по ссылке для подтверждения изменения почты
         """
 
         # Monkey patching
-        ChangeUserEmailView.post = post_for_change_user_email_fake
+        ChangeUserEmailView.post = fake_post_for_change_user_email_fake
         self.create_token()
         token = self.users.get('user_1').get('token')
         old_email = self.users.get('user_1').get('email')
@@ -604,6 +861,8 @@ class UserTestCase(CreateUsersTestCase):
         data_for_update = response.json().get('data')
         self.assertIn('uidb64', data_for_update.keys())
         self.assertIn('token', data_for_update.keys())
+
+        # проверяем что данные не поменялись
         response = self.client.get(
             path=reverse('user'),
             headers=auth_data
@@ -614,4 +873,109 @@ class UserTestCase(CreateUsersTestCase):
         self.assertEqual(user_data.get('email'), old_email)
         self.assertNotEqual(user_data.get('email'), new_email)
 
-# еще можно проверять токены и uid
+    def test_change_email_with_invalid_uidb64(self):
+        """
+        Тестирует изменение почты авторизированного пользователя
+        с неверным uidb64 для подтверждения смены адреса почты
+        """
+
+        # Monkey patching
+        ChangeUserEmailView.post = fake_post_for_change_user_email_fake
+        self.create_token()
+        token = self.users.get('user_1').get('token')
+        new_email = fake.email()
+        old_email = self.users.get('user_1').get('email')
+        user_data = {
+            'email': new_email
+        }
+        auth_data = {
+            'Authorization': f'Bearer {token}'
+        }
+        response = self.client.post(
+            path=reverse('change_email'),
+            data=user_data,
+            headers=auth_data
+        )
+        self.assertEqual(response.status_code, 201)
+        self.assertIn('data', response.json().keys())
+        data_for_update = response.json().get('data')
+        uidb64 = 'test1234'
+        token = data_for_update.get('token')
+
+        # подтверждаем почту
+        response = self.client.put(
+            path=reverse('confirm_for_change_email', kwargs={
+                'uidb64': uidb64,
+                'token': token
+            }),
+            content_type='application/json',
+            headers=auth_data
+        )
+        self.assertEqual(response.status_code, 401)
+        self.assertIn('errors', response.json().keys())
+        errors = response.json().get('errors')
+        self.assertEqual(errors.get('uuid'), 'An uuid is not valid.')
+
+        # проверяем что данные не поменялись
+        response = self.client.get(
+            path=reverse('user'),
+            headers=auth_data
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('data', response.json().keys())
+        user_data = response.json().get('data')
+        self.assertEqual(user_data.get('email'), old_email)
+        self.assertNotEqual(user_data.get('email'), new_email)
+
+    def test_change_email_with_invalid_token(self):
+        """
+        Тестирует изменение почты авторизированного пользователя
+        с подтверждением нового адреса почты
+        """
+
+        # Monkey patching
+        ChangeUserEmailView.post = fake_post_for_change_user_email_fake
+        self.create_token()
+        token = self.users.get('user_1').get('token')
+        old_email = self.users.get('user_1').get('email')
+        new_email = fake.email()
+        user_data = {
+            'email': new_email
+        }
+        auth_data = {
+            'Authorization': f'Bearer {token}'
+        }
+        response = self.client.post(
+            path=reverse('change_email'),
+            data=user_data,
+            headers=auth_data
+        )
+        self.assertEqual(response.status_code, 201)
+        self.assertIn('data', response.json().keys())
+        data_for_update = response.json().get('data')
+        uidb64 = data_for_update.get('uidb64')
+
+        # подтверждаем почту
+        response = self.client.put(
+            path=reverse('confirm_for_change_email', kwargs={
+                'uidb64': uidb64,
+                'token': 'test1234'
+            }),
+            content_type='application/json',
+            headers=auth_data
+        )
+        self.assertEqual(response.status_code, 401)
+        self.assertIn('errors', response.json().keys())
+        errors = response.json().get('errors')
+        self.assertEqual(errors.get('token'), 'A token is not valid.')
+
+        # проверяем что данные не поменялись
+        response = self.client.get(
+            path=reverse('user'),
+            headers=auth_data
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('data', response.json().keys())
+        user_data = response.json().get('data')
+        self.assertEqual(user_data.get('email'), old_email)
+        self.assertNotEqual(user_data.get('email'), new_email)

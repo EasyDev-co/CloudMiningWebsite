@@ -138,7 +138,7 @@ class LoginUserSerializer(serializers.ModelSerializer):
             )
         if not user.is_confirm:
             raise exceptions.ValidationError(
-                detail='An account is not confirm.'
+                detail={'account': 'An account is not confirm.'}
             )
         validated_data['tokens'] = user.tokens
         return validated_data

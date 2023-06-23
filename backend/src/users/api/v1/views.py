@@ -180,12 +180,12 @@ class CheckTokenForResetPasswordView(generics.GenericAPIView):
             DjangoUnicodeDecodeError
         ):
             return Response(
-                data={'uuid': 'An uuid is not valid.'},
+                {'uuid': 'An uuid is not valid.'},
                 status=status.HTTP_401_UNAUTHORIZED
             )
         if not PasswordResetTokenGenerator().check_token(user, token):
             return Response(
-                data={'token': 'A token is not valid.'},
+                {'token': 'A token is not valid.'},
                 status=status.HTTP_401_UNAUTHORIZED
             )
         try:
