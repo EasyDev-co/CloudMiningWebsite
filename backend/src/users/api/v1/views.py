@@ -3,9 +3,10 @@ from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.utils.http import urlsafe_base64_decode
 from django.utils.encoding import force_str, DjangoUnicodeDecodeError
 from rest_framework.permissions import IsAuthenticated
-from rest_framework import generics, status
+from rest_framework.throttling import AnonRateThrottle
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework import generics, status
 from src.users.api.v1.serializers import (
     UserRegisterSerializer,
     UserTokenSerializer,
@@ -28,7 +29,6 @@ from src.users.utils import (
     get_data_for_add_new_email_for_user_email
 )
 from src.users.api.v1.renderars import UserDataRender
-from rest_framework.throttling import AnonRateThrottle
 from src.users.models import NewEmail
 
 User = get_user_model()
