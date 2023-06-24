@@ -8,7 +8,7 @@ from src.application.db_commands import (
 
 def calculate_income_btc(btc_amount: float = 1):
     H = btc_amount * 10 ** 12
-    t = 86400  # секунд в сутки
+    t = 86400  # секунд в сутках
     R = get_reward_block_or_404()
     D = get_difficulty_or_404()
     return (t * R.reward_block * H) / (D.difficulty * 2 ** 32)
