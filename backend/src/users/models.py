@@ -37,7 +37,7 @@ class User(AbstractUser):
         _("email address"),
         unique=True,
         error_messages={
-            "unique": _("A user with that email already exists."),
+            "unique": _("An user with that email already exists."),
         }
     )
     is_confirm = models.BooleanField(
@@ -49,7 +49,6 @@ class User(AbstractUser):
         max_length=15,
         blank=True,
         error_messages={
-            "unique": _("A user with that phone number already exists."),
             "max_length": _("A telephone number cannot have more than 15 digits"),
         }
     )

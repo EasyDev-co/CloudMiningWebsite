@@ -426,7 +426,7 @@ class UserTestCase(CreateUsersTestCase):
         self.assertIn('errors', response.json().keys())
         errors = response.json().get('errors')
         self.assertEqual(
-            errors.get('email')[0], 'A user with that email already exists.'
+            errors.get('email')[0], 'An user with that email already exists.'
         )
 
     def test_create_token(self):
@@ -697,7 +697,7 @@ class UserTestCase(CreateUsersTestCase):
         errors = response.json().get('errors')
         self.assertEqual(
             errors.get('phone_number')[0],
-            'An current phone number already exists.'
+            'A current phone number already exists.'
         )
 
     def test_change_phone_number_to_invalid_phone_number(self):
@@ -801,7 +801,7 @@ class UserTestCase(CreateUsersTestCase):
         self.assertIn('errors', response.json().keys())
         errors = response.json().get('errors')
         self.assertEqual(errors.get('username')[
-                         0], 'A user with that username already exists.')
+                         0], 'An username is already exist.')
 
     def test_change_email_with_confirm_new_email(self):
         """

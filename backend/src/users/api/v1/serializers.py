@@ -230,6 +230,8 @@ class ChangeUserFirstNameSerializer(serializers.ModelSerializer):
     """
     Сериализация имени пользователя при ее изменении
     """
+    first_name = serializers.CharField()
+
     class Meta:
         model = User
         fields = ['first_name', ]
@@ -244,12 +246,13 @@ class ChangeUserLastNameSerializer(serializers.ModelSerializer):
     """
     Сериализация фамилии пользователя при ее изменении
     """
+    last_name = serializers.CharField()
+
     class Meta:
         model = User
         fields = ['last_name', ]
 
     def update(self, instance, validated_data):
-        print(validated_data)
         instance.last_name = (validated_data.get('last_name'))
         instance.save()
         return instance
@@ -276,13 +279,14 @@ class ChangeUserPhoneNumberSerializer(serializers.ModelSerializer):
         phone_number = attrs.get('phone_number')
         if self.Meta.model.objects.filter(phone_number=phone_number).exists():
             raise exceptions.ValidationError(
-                detail={'phone_number': 'An current phone number already exists.'}
+                detail={
+                    'phone_number': 'A current phone number already exists.'
+                }
             )
         validated_data = super().validate(attrs)
         return validated_data
 
     def update(self, instance, validated_data):
-        print(validated_data)
         instance.phone_number = (validated_data.get('phone_number'))
         instance.save()
         return instance
@@ -315,7 +319,7 @@ class ChangeUserPasswordSerializer(serializers.ModelSerializer):
             except django_exceptions.ValidationError as e:
                 serializer_error = serializers.as_serializer_error(e)
                 raise serializers.ValidationError(
-                    {"password": serializer_error[
+                    {"new_password": serializer_error[
                         api_settings.NON_FIELD_ERRORS_KEY
                     ]
                     }
@@ -396,6 +400,11 @@ class UserTokenUIDSerializer(serializers.ModelSerializer):
 
 
 class ChangeUserUsernameSerializer(serializers.ModelSerializer):
+    """
+    Сериализация юзернейма для его изменения
+    """
+    username = serializers.CharField()
+
     class Meta:
         model = User
         fields = ['username', ]

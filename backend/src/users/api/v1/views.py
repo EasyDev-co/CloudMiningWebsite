@@ -1,7 +1,4 @@
 from django.contrib.auth import get_user_model
-from django.contrib.auth.tokens import PasswordResetTokenGenerator
-from django.utils.http import urlsafe_base64_decode
-from django.utils.encoding import force_str, DjangoUnicodeDecodeError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.throttling import AnonRateThrottle
 from rest_framework.response import Response
@@ -185,32 +182,6 @@ class CheckTokenForResetPasswordView(generics.GenericAPIView):
         )
         uuid_token_serializer.is_valid(raise_exception=True)
         uuid = uuid_token_serializer.data.get('uuid')
-        # try:
-        #     uid = force_str(urlsafe_base64_decode(uidb64))
-        #     user = User.objects.get(pk=uid)
-        # except (
-        #     TypeError,
-        #     ValueError,
-        #     OverflowError,
-        #     User.DoesNotExist,
-        #     DjangoUnicodeDecodeError
-        # ):
-        #     return Response(
-        #         {'uuid': 'An uuid is not valid.'},
-        #         status=status.HTTP_401_UNAUTHORIZED
-        #     )
-        # if not PasswordResetTokenGenerator().check_token(user, token):
-        #     return Response(
-        #         {'token': 'A token is not valid.'},
-        #         status=status.HTTP_401_UNAUTHORIZED
-        #     )
-        # try:
-        #     user = User.objects.get(uuid=uid)
-        # except User.DoesNotExist:
-        #     return Response(
-        #         data={'token': 'A token is not valid.'},
-        #         status=status.HTTP_404_NOT_FOUND
-        #     )
         user = User.objects.get(uuid=uuid)
         serializer = self.serializer_class(data=request.data, instance=user)
         serializer.is_valid(raise_exception=True)
@@ -333,25 +304,6 @@ class CheckTokenForChangeUserEmailView(generics.GenericAPIView):
             }
         )
         serializer.is_valid(raise_exception=True)
-        # try:
-        #     uid = force_str(urlsafe_base64_decode(uidb64))
-        #     user = User.objects.get(pk=uid)
-        # except (
-        #     TypeError,
-        #     ValueError,
-        #     OverflowError,
-        #     User.DoesNotExist,
-        #     DjangoUnicodeDecodeError
-        # ):
-        #     return Response(
-        #         data={'uuid': 'An uuid is not valid.'},
-        #         status=status.HTTP_401_UNAUTHORIZED
-        #     )
-        # if not PasswordResetTokenGenerator().check_token(user, token):
-        #     return Response(
-        #         data={'token': 'A token is not valid.'},
-        #         status=status.HTTP_401_UNAUTHORIZED
-        #     )
         serializer_data = serializer.data
         uuid = serializer_data.get('uuid')
         try:
