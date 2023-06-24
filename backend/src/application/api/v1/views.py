@@ -52,7 +52,7 @@ class GetAllContractsView(generics.ListAPIView):
 
     def get_queryset(self):
         queryset = Contract._default_manager.filter(
-            customer=self.request.user.id
+            customer_id=self.request.user.uuid
             )
         return queryset
 
@@ -65,7 +65,7 @@ class GetDailyIncomeView(APIView):
 
     def get(self, request, *args, **kwargs):
         contract = Contract.objects.filter(
-            pk=kwargs.get('pk'), customer_id=request.user.id
+            pk=kwargs.get('pk'), customer_id=request.user.uuid
         ).values(
             'hashrate'
         )
