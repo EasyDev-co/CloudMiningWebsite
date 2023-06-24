@@ -672,7 +672,7 @@ class UserTestCase(CreateUsersTestCase):
         Тестирует изменение номера телефона авторизованного пользователя
         на неуникальный номер телефона
         """
-
+        self.create_phone_number()
         self.create_token()
         users = self.users
         user_1 = users.get('user_1')
@@ -800,8 +800,9 @@ class UserTestCase(CreateUsersTestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn('errors', response.json().keys())
         errors = response.json().get('errors')
-        self.assertEqual(errors.get('username')[
-                         0], 'An username is already exist.')
+        self.assertEqual(
+            errors.get('username')[0], 'An username is already exist.'
+        )
 
     def test_change_email_with_confirm_new_email(self):
         """

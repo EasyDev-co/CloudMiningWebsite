@@ -1,3 +1,4 @@
+from django.contrib.auth import get_user_model
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
@@ -7,7 +8,7 @@ from src.reviews.api.v1.serializers import (
     AddReviewSerializer
 )
 from src.reviews.models import Review
-from django.contrib.auth import get_user_model
+from src.reviews.api.v1.renderars import ReviewDataRender
 
 
 User = get_user_model()
@@ -21,7 +22,7 @@ class ReviewsListPagination(PageNumberPagination):
 
 class AddReviewView(generics.GenericAPIView):
     """Добавление отзыва"""
-
+    renderer_classes = (ReviewDataRender,)
     serializer_class = AddReviewSerializer
 
     def get_author_data(self, request):
@@ -70,6 +71,7 @@ class AllReviewsView(generics.ListAPIView):
     """Вывод всех отзывов, одобренных администратором"""
     serializer_class = ReviewsSerializer
     pagination_class = ReviewsListPagination
+    renderer_classes = (ReviewDataRender,)
 
     def get_queryset(self):
         queryset = Review._default_manager.filter(
