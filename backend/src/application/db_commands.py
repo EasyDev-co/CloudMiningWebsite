@@ -13,8 +13,8 @@ def update_or_create_difficulty(difficulty: int):
     )
 
 
-def update_or_create_reward(reward: int):
-    reward_block = round((reward / (10 ** (len(str(reward)) - 1))), 2)
+def update_or_create_reward(blocks: int):
+    reward_block = 50 / 2 ** (blocks // 210_000)
     Reward.objects.update_or_create(
         id='reward_block', defaults={'reward_block': reward_block}
     )

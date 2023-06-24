@@ -13,21 +13,34 @@ from src.application.db_commands import (
 load_dotenv()
 
 LAST_BLOCK_DATA = os.environ.get('LAST_BLOCK_DATA')
+BTC_DATA_TOKEN = os.environ.get('BTC_DATA_TOKEN')
+
 BTC_TO_USD = os.environ.get('BTC_TO_USD')
 
 
 @app.task
 def save_new_block_data_in_db():
     try:
-        resonse = requests.get(url=LAST_BLOCK_DATA)
+        resonse = requests.post(
+            url=LAST_BLOCK_DATA,
+            headers={
+                'x-api-key': BTC_DATA_TOKEN
+            },
+            json={
+                "jsonrpc": "2.0",
+                "method": "getblockchaininfo",
+                "params": [],
+                "id": "getblock.io"
+            }
+        )
         if resonse.status_code == 200:
-            block_data = resonse.json().get('data')
+            block_data = resonse.json().get('result')
             difficulty = block_data.get('difficulty')
-            reward = block_data.get('reward_block')
+            blocks = block_data.get('blocks')
             if difficulty:
                 update_or_create_difficulty(difficulty=difficulty)
-            if reward:
-                update_or_create_reward(reward=reward)
+            if blocks:
+                update_or_create_reward(blocks=blocks)
     except Exception:
         return None
 
