@@ -60,6 +60,7 @@ class Contract(models.Model):
     class Meta:
         verbose_name = 'контракт'
         verbose_name = 'Контракты'
+        ordering = ('-created_at',)
 
     customer = models.ForeignKey(
         User,
@@ -71,6 +72,7 @@ class Contract(models.Model):
     hashrate = models.FloatField(verbose_name='Хешрейт')
     contract_start = models.DateField(verbose_name='Начало')
     contract_end = models.DateField(verbose_name='Завершение')
+    is_paid = models.BooleanField(default=False, verbose_name='Оплачено')
 
     created_at = models.DateTimeField(
         auto_now_add=True, verbose_name='Дата создания'

@@ -62,6 +62,11 @@ class User(AbstractUser):
             'access': str(refresh_token.access_token)
         }
 
+    def __str__(self):
+        if self.get_full_name():
+            return self.get_full_name()
+        return self.username
+
 
 class NewEmail(models.Model):
     email = models.EmailField(

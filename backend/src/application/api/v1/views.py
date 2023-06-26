@@ -27,6 +27,16 @@ class CreateContractView(generics.CreateAPIView):
     ]
 
     def create(self, request, *args, **kwargs):
+        contract = Contract.objects.filter(
+            customer_id=request.user.uuid
+        ).first()
+        if contract.is_paid is False:
+            return Response(
+                data={
+                    'contract':  'Previous contract not paid.'
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
         serializer = self.get_serializer(
             data=request.data
         )
@@ -53,7 +63,7 @@ class GetAllContractsView(generics.ListAPIView):
     def get_queryset(self):
         queryset = Contract._default_manager.filter(
             customer_id=self.request.user.uuid
-            )
+        )
         return queryset
 
 
@@ -83,3 +93,13 @@ class GetDailyIncomeView(APIView):
             },
             status=status.HTTP_200_OK
         )
+
+
+class ChangeLastContractPaymentStatus(APIView):
+    """
+    Меняет статус оплаты
+    у последнего контракта для пользователя
+    """
+
+    def post(self, request, *args, **kwargs):
+        pass
