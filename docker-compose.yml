@@ -18,7 +18,7 @@ services:
   web:
     build:
       context: ./backend
-      dockerfile: Dockerfile
+      dockerfile: backend.dockerfile
     container_name: ${PROJECT_SLUG}_app
     working_dir: /opt/backend
     volumes:
@@ -53,8 +53,9 @@ services:
       - nginx_network
 
   celery:
-    build: ./backend
-    command: celery -A config worker --loglevel=info
+    build:
+      context: ./backend
+      dockerfile: celery.dockerfile
     env_file:
       - .env
     volumes:
@@ -62,19 +63,6 @@ services:
     depends_on:
       - db
       - redis
-    networks:
-      - nginx_network
-
-  celery_beat:
-    build: ./backend
-    command: celery -A config beat --loglevel=info
-    env_file:
-      - .env
-    volumes:
-      - ./backend/:/backend/:rw
-    depends_on:
-       - db
-       - redis
     networks:
       - nginx_network
 

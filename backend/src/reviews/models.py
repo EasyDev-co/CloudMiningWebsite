@@ -3,10 +3,7 @@ from django.utils.translation import gettext_lazy as _
 
 
 class Review(models.Model):
-    class Meta:
-        verbose_name = 'отзыв'
-        verbose_name_plural = 'Отзывы'
-        ordering = ('-created_at',)
+
     first_name = models.CharField(max_length=100, verbose_name='Имя')
     last_name = models.CharField(max_length=100, verbose_name='Фамилия')
     phone_number = models.CharField(
@@ -24,3 +21,8 @@ class Review(models.Model):
     is_published = models.BooleanField(
         default=False, verbose_name='Опубликован'
     )
+
+    class Meta:
+        verbose_name = 'отзыв'
+        verbose_name_plural = 'Отзывы'
+        ordering = ('-created_at',)
