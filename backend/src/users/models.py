@@ -49,7 +49,7 @@ class User(AbstractUser):
         max_length=15,
         blank=True,
         error_messages={
-            "max_length": _("A telephone number cannot have more than 15 digits"),
+            "max_length": _("A phone number cannot have more than 15 digits"),
         }
     )
 
