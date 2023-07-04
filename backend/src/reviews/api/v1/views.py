@@ -1,9 +1,17 @@
+from django.contrib.auth import get_user_model
 from rest_framework import generics, status
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import PageNumberPagination
-from src.reviews.api.v1.serializers import ReviewsSerializer
+from src.reviews.api.v1.serializers import (
+    ReviewsSerializer,
+    AddReviewLogicSerializer,
+    AddReviewSerializer
+)
 from src.reviews.models import Review
+from src.reviews.api.v1.renderars import ReviewDataRender
+
+
+User = get_user_model()
 
 
 class ReviewsListPagination(PageNumberPagination):
@@ -12,31 +20,58 @@ class ReviewsListPagination(PageNumberPagination):
     max_page_size = 30
 
 
-class AddReviewView(generics.CreateAPIView):
-    serializer_class = ReviewsSerializer
-    permission_classes = [
-        IsAuthenticated,
-    ]
+class AddReviewView(generics.GenericAPIView):
+    """Добавление отзыва"""
+    renderer_classes = (ReviewDataRender,)
+    serializer_class = AddReviewSerializer
 
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(
-            data=request.data
+    def get_author_data(self, request):
+        if request.user.is_anonymous:
+            return request.data
+
+        elif request.user.is_authenticated:
+            uuid = request.user.uuid
+            user = User.objects.get(uuid=uuid)
+            first_name = request.data.get('first_name')
+            last_name = request.data.get('last_name')
+            phone_number = request.data.get('phone_number')
+
+            if not user.first_name and first_name:
+                user.first_name = first_name
+                user.save()
+            if not user.last_name and last_name:
+                user.last_name = last_name
+                user.save()
+            if not user.phone_number and phone_number:
+                user.phone_number = phone_number
+                user.save()
+
+            return {
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'phone_number': user.phone_number,
+                'rating': request.data.get('rating'),
+                'text': request.data.get('text')
+            }
+
+    def post(self, request, *args, **kwargs):
+        data = self.get_author_data(request=request)
+        serializer = AddReviewLogicSerializer(
+            data=data
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save(
-            author=request.user
-        )
-        headers = self.get_success_headers(serializer.data)
+        serializer.save()
         return Response(
             serializer.data,
-            status=status.HTTP_201_CREATED,
-            headers=headers
+            status=status.HTTP_201_CREATED
             )
 
 
 class AllReviewsView(generics.ListAPIView):
+    """Вывод всех отзывов, одобренных администратором"""
     serializer_class = ReviewsSerializer
     pagination_class = ReviewsListPagination
+    renderer_classes = (ReviewDataRender,)
 
     def get_queryset(self):
         queryset = Review._default_manager.filter(

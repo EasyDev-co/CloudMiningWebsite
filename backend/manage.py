@@ -2,6 +2,19 @@
 """Django's command-line utility for administrative tasks."""
 import os
 import sys
+from config.settings import (
+    EMAIL_HOST_USER,
+    EMAIL_HOST_PASSWORD
+)
+
+
+def check_smtp_settings():
+    """Проверяет переданные ли данные для отправки сообщений польщователю"""
+    smtp_lst = [EMAIL_HOST_PASSWORD, EMAIL_HOST_USER]
+    if not all(smtp_lst):
+        raise Exception('Не указаны переменные окружения: EMAIL_HOST_PASSWORD, EMAIL_HOST_USER')
+    else:
+        return True
 
 
 def main():
@@ -19,4 +32,5 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    if check_smtp_settings():
+        main()

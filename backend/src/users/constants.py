@@ -1,0 +1,3 @@
+EMAIL_SUBJECT_FOR_ACTIVATION_ACCONT = 'Verify your account'
+EMAIL_SUBJECT_FOR_RESET_PASSWORD = 'Reset your password'
+EMAIL_SUBJECT_FOR_CHANGE_EMAIL = 'Change your email'

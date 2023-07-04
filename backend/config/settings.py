@@ -14,6 +14,11 @@ DEBUG = os.environ.get("DEBUG")
 
 ALLOWED_HOSTS = ['*']
 
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+CSRF_COOKIE_SETTINGS = True
+USE_X_FORWARDED_HOST = True
+
+
 include(
     'components/app_settings.py'
 )
@@ -39,6 +44,11 @@ include(
 
 include(
     'components/static.py'
+)
+
+
+include(
+    'components/celery_settings.py'
 )
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

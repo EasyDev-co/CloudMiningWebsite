@@ -7,11 +7,11 @@ makemigrations:
 migrate:
 	poetry run python manage.py migrate
 
-flower:
-	poetry run celery -A config flower  --address=127.0.0.1 --port=5566
-
-celery:
-	poetry run celery -A config worker -l info
-
 test:
 	poetry run python manage.py test
+
+celery:
+	poetry run celery -A config worker --beat -s celerybeat-schedule --loglevel INFO
+
+flower:
+	poetry run celery -A config flower  --address=127.0.0.1 --port=5566 --loglevel INFO

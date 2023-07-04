@@ -1,13 +1,21 @@
 from django.contrib import admin
 from src.reviews.models import Review
 
+
 @admin.register(Review)
 class ReviewAdmin(admin.ModelAdmin):
     list_display = (
         'id',
-        'author',
-        'text',
+        'first_name',
+        'last_name',
         'created_at',
         'is_published'
     )
-    readonly_fields = ['author', 'text', 'created_at']
+    readonly_fields = [
+        'first_name',
+        'last_name',
+        'phone_number',
+        'text',
+        'rating',
+        'created_at',
+        ]

@@ -1,12 +1,23 @@
-from djoser.email import PasswordResetEmail
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from config.celery import app
+from .utils import send_email
+
+
+User = get_user_model()
 
 
 @app.task(bind=True, default_retry_delay=5 * 60)
-def send_reset_password_email(self, context, email):
+def send_email_for_user(self, data):
+    """
+    Добавляет отправку сообщения пользователю
+    в очередь Celery
+
+    При ошибке повторная попытка отправить сообщение
+    произойдет через 1 минуту
+    """
     try:
-        context['user'] = User.objects.get(id=context.get('user_id'))
-        PasswordResetEmail(context=context).send(email)
+        send_email(
+            data=data
+        )
     except Exception as exc:
         raise self.retry(exc=exc, countdown=60)
