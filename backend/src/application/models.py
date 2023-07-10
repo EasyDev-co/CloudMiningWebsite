@@ -82,4 +82,3 @@ class Contract(models.Model):
         verbose_name = 'контракт'
         verbose_name_plural = 'Контракты'
         ordering = ('-created_at',)
-

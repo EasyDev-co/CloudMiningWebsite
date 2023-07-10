@@ -102,4 +102,26 @@ class ChangeLastContractPaymentStatus(APIView):
     """
 
     def post(self, request, *args, **kwargs):
-        pass
+        customer_id = request.get('user_id', '')
+        count = request.get('count', 0)
+        # crypto_type = request.get('crypto_type', '')
+        # txid = request.get('txid', '')
+        # date = request.get('datetime')
+        if not all([customer_id, count]):
+            return Response(
+                data={
+                    'data': 'Some payment verification data\
+ has not been transmitted.'}
+            )
+        contract = Contract.objects.get(customer_id=customer_id)
+        if not contract:
+            return Response(
+                data={'uuid': f'The user with uuid {customer_id} has not\
+ entered into any contracts.'}
+            )
+        else:
+            if contract.hashrate != count:
+                return Response(
+                    data={'uuid': f'The user with uuid {customer_id} has not\
+ entered into any contracts.'}
+                )

@@ -17,13 +17,13 @@ djangorestframework = "^3.14.0"
 python-dotenv = "^1.0.0"
 djangorestframework-simplejwt = "^5.2.2"
 django-filter = "^23.2"
-djoser = "^2.2.0"
 celery = "^5.2.7"
 flower = "^1.2.0"
 redis = "^4.5.5"
 gunicorn = "^20.1.0"
 coreapi = "^2.3.3"
 pyyaml = "^6.0"
+django-cors-headers = "^4.2.0"
 
 
 [tool.poetry.group.dev.dependencies]

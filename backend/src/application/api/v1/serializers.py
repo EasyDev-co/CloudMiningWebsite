@@ -27,3 +27,23 @@ class GetAllContractsSerizalizer(serializers.ModelSerializer):
             'contract_end',
             'is_paid'
         ]
+
+
+class ChangeLastContractPaymentStatusSerializer(serializers.ModelSerializer):
+
+    user_id = serializers.CharField()
+    count = serializers.FloatField()
+    crypto_type = serializers.CharField(min_lenght=3, max_length=4)
+    txid = serializers.CharField()
+    date = serializers.DateTimeField()
+
+    class Meta:
+        model = Contract
+
+        fields = {
+            'user_id',
+            'count',
+            'crypto_type',
+            'txid',
+            'date'
+        }
