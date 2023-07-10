@@ -53,7 +53,4 @@ include(
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-CORS_ALLOWED_ORIGINS = [
-    "",
-    ""
-]
+CORS_ALLOW_ALL_ORIGINS = True
