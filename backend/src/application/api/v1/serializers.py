@@ -33,7 +33,7 @@ class ChangeLastContractPaymentStatusSerializer(serializers.ModelSerializer):
 
     user_id = serializers.CharField()
     count = serializers.FloatField()
-    crypto_type = serializers.CharField(min_lenght=3, max_length=4)
+    crypto_type = serializers.CharField(min_length=3, max_length=4)
     txid = serializers.CharField()
     date = serializers.DateTimeField()
 
