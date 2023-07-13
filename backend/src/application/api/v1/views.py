@@ -8,7 +8,8 @@ from src.application.api.v1.serializers import (
     GetAllContractsSerizalizer
 )
 from src.application.api.v1.formulas import (
-    calculate_income_btc, calculate_income_usd
+    calculate_income_btc,
+    calculate_income_usd
 )
 from src.application.models import Contract
 
@@ -30,7 +31,7 @@ class CreateContractView(generics.CreateAPIView):
         contract = Contract.objects.filter(
             customer_id=request.user.uuid
         ).first()
-        if contract.is_paid is False:
+        if contract and contract.is_paid is False:
             return Response(
                 data={
                     'contract':  'Previous contract not paid.'

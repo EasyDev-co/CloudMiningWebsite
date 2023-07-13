@@ -1,10 +1,11 @@
+from django.shortcuts import get_object_or_404
 from src.application.models import (
     Difficulty,
     Reward,
     MaintenanceCost,
-    BtcPrice
+    BtcPrice,
+    RentalThCost
 )
-from django.shortcuts import get_object_or_404
 
 
 def update_or_create_difficulty(difficulty: int):
@@ -47,4 +48,10 @@ def get_maintenance_coast_or_404():
 def get_btc_price_or_404():
     return get_object_or_404(
         BtcPrice, id='btc_price'
+    )
+
+
+def get_th_rental_cost_or_404():
+    return get_object_or_404(
+        RentalThCost, id='th_rental_cost'
     )

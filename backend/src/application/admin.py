@@ -1,12 +1,25 @@
 from django.contrib import admin
-from src.application.models import MaintenanceCost, Contract
+from src.application.models import (
+    MaintenanceCost,
+    Contract,
+    RentalThCost
+)
 
 
 @admin.register(MaintenanceCost)
 class MaintenanceCostAdmin(admin.ModelAdmin):
     list_display = (
         'id',
-        'coast'
+        'cost'
+    )
+    readonly_fields = ['id']
+
+
+@admin.register(RentalThCost)
+class RentalThCostAdmin(admin.ModelAdmin):
+    list_display = (
+        'id',
+        'cost'
     )
     readonly_fields = ['id']
 
