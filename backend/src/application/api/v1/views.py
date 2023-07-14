@@ -11,11 +11,9 @@ from src.application.api.v1.serializers import (
 )
 from src.application.api.v1.formulas import (
     calculate_income_btc,
-    calculate_income_usd,
-    calculate_contract_price
+    calculate_income_usd
 )
 from src.application.models import Contract
-from src.application.db_commands import get_cryptocurrency_price_or_404
 
 
 class APIListPagination(PageNumberPagination):
