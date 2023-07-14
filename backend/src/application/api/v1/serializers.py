@@ -83,7 +83,9 @@ class ChangeLastContractPaymentStatusSerializer(serializers.ModelSerializer):
         customer_id = attrs.get('user_id')
         count = attrs.get('count')
         crypto_type = attrs.get('crypto_type')
-        contract = self.Meta.model.objects.get(customer_id=customer_id)
+        contract = self.Meta.model.objects.filter(
+            customer_id=customer_id, is_paid=False
+        ).first()
         contract_data = {
             'hashrate': contract.hashrate,
             'contract_start': contract.contract_start,

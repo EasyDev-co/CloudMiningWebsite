@@ -126,19 +126,15 @@ class ChangeLastContractPaymentStatus(generics.GenericAPIView):
     def post(self, request, *args, **kwargs):
         customer_id = request.data.get('user_id')
         try:
-            contract = Contract.objects.get(customer_id=customer_id)
+            contract = Contract.objects.filter(
+                customer_id=customer_id, is_paid=False
+            ).first()
         except ValidationError:
             return Response(
                 data={'uuid': 'Invalid UUID.'},
                 status=status.HTTP_406_NOT_ACCEPTABLE
             )
-        except Contract.DoesNotExist:
-            return Response(
-                data={'uuid': f'The user with uuid {customer_id} has not\
- entered into any contracts.'},
-                status=status.HTTP_404_NOT_FOUND
-            )
-        if not contract or contract.is_paid:
+        if not contract:
             return Response(
                 status=status.HTTP_204_NO_CONTENT
             )
