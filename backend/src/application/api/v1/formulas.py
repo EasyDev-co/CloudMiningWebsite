@@ -26,9 +26,11 @@ def calculate_income_usd(btc_amount: float):
 
 
 def calculate_contract_price(contract_data: dict):
+    print(contract_data)
     hashrate_count = contract_data.get('hashrate')
     contract_start = contract_data.get('contract_start')
     contract_end = contract_data.get('contract_end')
     mining_period = (contract_end - contract_start).total_seconds()
     th_rental_cost = get_th_rental_cost_or_404()
+    print(th_rental_cost.cost)
     return hashrate_count * th_rental_cost.cost * mining_period

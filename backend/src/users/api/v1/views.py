@@ -1,4 +1,5 @@
 import os
+import requests
 from dotenv import load_dotenv
 from django.contrib.auth import get_user_model
 from rest_framework.permissions import IsAuthenticated
@@ -21,7 +22,10 @@ from src.users.api.v1.serializers import (
     ChangeUserUsernameSerializer,
     UserTokenUIDSerializer
 )
-from src.users.tasks import send_email_for_user
+from src.users.tasks import (
+    send_email_for_user,
+    create_user_wallet
+)
 from src.users.utils import (
     get_data_for_activation_account_email,
     get_data_for_reset_password_email,
@@ -142,15 +146,10 @@ class UserLoginView(generics.GenericAPIView):
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
-        # access_token = serializer.data.get('tokens').get('access')
-        # auth_data = {
-        #     'Authorization': f'Bearer {access_token}'
-        # }
-        # response = requests.post(
-        #     url=BASE_URL + '/api/v1/users/create',
-        #     headers=auth_data
-        # )
-        # if response.status_code == 200:
+        access_token = serializer.data.get('tokens').get('access')
+        create_user_wallet.delay(
+            access_token=access_token
+        )
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
 

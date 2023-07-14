@@ -5,8 +5,37 @@ from src.application.api.v1.formulas import calculate_contract_price
 from src.application.db_commands import get_cryptocurrency_price_or_404
 
 
-class CreateContractSerizalizer(serializers.ModelSerializer):
+class GetContractPriceSerizalizer(serializers.ModelSerializer):
     contract_price = serializers.FloatField(read_only=True)
+    hashrate = serializers.FloatField(write_only=True)
+    contract_start = serializers.DateField(write_only=True)
+    contract_end = serializers.DateField(write_only=True)
+
+    class Meta:
+        model = Contract
+
+        fields = [
+            'hashrate',
+            'contract_start',
+            'contract_end',
+            'contract_price'
+        ]
+
+    def validate(self, attrs):
+        contract_data = {
+            'hashrate': attrs.get('hashrate'),
+            'contract_start': attrs.get('contract_start'),
+            'contract_end': attrs.get('contract_end')
+        }
+        contract_price = calculate_contract_price(
+            contract_data=contract_data
+        )
+        return {
+            'contract_price': contract_price
+        }
+
+
+class CreateContractSerizalizer(serializers.ModelSerializer):
 
     class Meta:
         model = Contract
@@ -15,19 +44,8 @@ class CreateContractSerizalizer(serializers.ModelSerializer):
             'id',
             'hashrate',
             'contract_start',
-            'contract_end',
-            'contract_price'
+            'contract_end'
         ]
-
-    def create(self, validated_data):
-        contract_data = validated_data
-        contract_price = calculate_contract_price(
-            contract_data=contract_data
-        )
-        new_contract = super().create(validated_data)
-        contract_data['id'] = new_contract.id
-        contract_data['contract_price'] = contract_price
-        return contract_data
 
 
 class GetAllContractsSerizalizer(serializers.ModelSerializer):

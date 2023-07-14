@@ -7,7 +7,8 @@ from rest_framework.pagination import PageNumberPagination
 from src.application.api.v1.serializers import (
     CreateContractSerizalizer,
     GetAllContractsSerizalizer,
-    ChangeLastContractPaymentStatusSerializer
+    ChangeLastContractPaymentStatusSerializer,
+    GetContractPriceSerizalizer
 )
 from src.application.api.v1.formulas import (
     calculate_income_btc,
@@ -20,6 +21,22 @@ class APIListPagination(PageNumberPagination):
     page_size = 20
     page_size_query_param = 'page_size'
     max_page_size = 30
+
+
+class CalculateContractPriceView(generics.GenericAPIView):
+    """Посчитает стоимость контракта в USDT"""
+    serializer_class = GetContractPriceSerizalizer
+
+    def get(self, request, *args, **kwargs):
+        print(kwargs)
+        serializer = self.serializer_class(
+            data=kwargs
+        )
+        serializer.is_valid(raise_exception=True)
+        return Response(
+            serializer.data,
+            status=status.HTTP_200_OK,
+        )
 
 
 class CreateContractView(generics.CreateAPIView):
