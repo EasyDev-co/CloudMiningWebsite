@@ -37,7 +37,9 @@ class Reward(models.Model):
 
 class MaintenanceCost(models.Model):
 
-    id = models.CharField(primary_key=True, max_length=20, default='maintenance_cost')
+    id = models.CharField(
+        primary_key=True, max_length=20, default='maintenance_cost'
+    )
     cost = models.FloatField(
         verbose_name='Стоимость',
         default=0
@@ -46,18 +48,6 @@ class MaintenanceCost(models.Model):
     class Meta:
         verbose_name = 'стоимость обслуживания'
         verbose_name_plural = 'Данные о стоимости обслуживания'
-
-
-class BtcPrice(models.Model):
-    id = models.CharField(primary_key=True, max_length=20, default='btc_price')
-    price = models.FloatField(
-        verbose_name='Стоимость',
-        default=0
-    )
-
-    class Meta:
-        verbose_name = 'стоимость btc (в usd)'
-        verbose_name_plural = 'Данные о стоимости биткоина (в usd)'
 
 
 class RentalThCost(models.Model):
@@ -72,6 +62,20 @@ class RentalThCost(models.Model):
     class Meta:
         verbose_name = 'стоимость аренды 1 TH (в usd)'
         verbose_name_plural = 'Данные о стоимость аренды 1 TH (в usd)'
+
+
+class CryptocurrencyToUsdtExchange(models.Model):
+    id = models.CharField(
+        primary_key=True, max_length=20
+    )
+    usdt = models.FloatField(
+        verbose_name='Цена в usdt',
+        default=0
+    )
+
+    class Meta:
+        verbose_name = 'курс криптовалюты (в usd)'
+        verbose_name_plural = 'Данные о курсах криптовалют (в usd)'
 
 
 class Contract(models.Model):

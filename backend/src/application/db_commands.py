@@ -3,7 +3,7 @@ from src.application.models import (
     Difficulty,
     Reward,
     MaintenanceCost,
-    BtcPrice,
+    CryptocurrencyToUsdtExchange,
     RentalThCost
 )
 
@@ -22,8 +22,14 @@ def update_or_create_reward(blocks: int):
 
 
 def update_or_create_btc_price(btc_price: float):
-    BtcPrice.objects.update_or_create(
-        id='btc_price', defaults={'price': btc_price}
+    CryptocurrencyToUsdtExchange.objects.update_or_create(
+        id='btc', defaults={'usdt': btc_price}
+    )
+
+
+def update_or_create_eth_price(eth_price: float):
+    CryptocurrencyToUsdtExchange.objects.update_or_create(
+        id='eth', defaults={'usdt': eth_price}
     )
 
 
@@ -45,9 +51,11 @@ def get_maintenance_coast_or_404():
     )
 
 
-def get_btc_price_or_404():
+def get_cryptocurrency_price_or_404(crypto_type: str):
+    if crypto_type == 'usdt':
+        return 1
     return get_object_or_404(
-        BtcPrice, id='btc_price'
+        CryptocurrencyToUsdtExchange, id=crypto_type
     )
 
 

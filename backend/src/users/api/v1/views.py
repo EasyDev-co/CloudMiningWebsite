@@ -1,5 +1,4 @@
 import os
-import requests
 from dotenv import load_dotenv
 from django.contrib.auth import get_user_model
 from rest_framework.permissions import IsAuthenticated
@@ -143,14 +142,14 @@ class UserLoginView(generics.GenericAPIView):
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
-        access_token = serializer.data.get('tokens').get('access')
-        auth_data = {
-            'Authorization': f'Bearer {access_token}'
-        }
-        response = requests.post(
-            url=BASE_URL + '/api/v1/users/create',
-            headers=auth_data
-        )
+        # access_token = serializer.data.get('tokens').get('access')
+        # auth_data = {
+        #     'Authorization': f'Bearer {access_token}'
+        # }
+        # response = requests.post(
+        #     url=BASE_URL + '/api/v1/users/create',
+        #     headers=auth_data
+        # )
         # if response.status_code == 200:
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 

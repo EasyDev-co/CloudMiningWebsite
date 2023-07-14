@@ -22,5 +22,9 @@ CELERY_BEAT_SCHEDULE = {  # scheduler configuration
     'Get_btc_price_task': {
         'task': 'src.application.tasks.save_new_btc_price_in_db',
         'schedule': crontab(),  # crontab() runs the tasks every minute
+    },
+    'Get_eth_price_task': {
+        'task': 'src.application.tasks.save_new_eth_price_in_db',
+        'schedule': crontab(),  # crontab() runs the tasks every minute
     }
 }

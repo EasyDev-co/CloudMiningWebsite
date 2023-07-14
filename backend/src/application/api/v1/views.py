@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from rest_framework import generics, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -5,13 +6,16 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import PageNumberPagination
 from src.application.api.v1.serializers import (
     CreateContractSerizalizer,
-    GetAllContractsSerizalizer
+    GetAllContractsSerizalizer,
+    ChangeLastContractPaymentStatusSerializer
 )
 from src.application.api.v1.formulas import (
     calculate_income_btc,
-    calculate_income_usd
+    calculate_income_usd,
+    calculate_contract_price
 )
 from src.application.models import Contract
+from src.application.db_commands import get_cryptocurrency_price_or_404
 
 
 class APIListPagination(PageNumberPagination):
@@ -96,33 +100,39 @@ class GetDailyIncomeView(APIView):
         )
 
 
-class ChangeLastContractPaymentStatus(APIView):
+class ChangeLastContractPaymentStatus(generics.GenericAPIView):
     """
     Меняет статус оплаты
     у последнего контракта для пользователя
     """
 
+    serializer_class = ChangeLastContractPaymentStatusSerializer
+
     def post(self, request, *args, **kwargs):
-        customer_id = request.get('user_id', '')
-        count = request.get('count', 0)
-        # crypto_type = request.get('crypto_type', '')
-        # txid = request.get('txid', '')
-        # date = request.get('datetime')
-        if not all([customer_id, count]):
+        customer_id = request.data.get('user_id')
+        try:
+            contract = Contract.objects.get(customer_id=customer_id)
+        except ValidationError:
             return Response(
-                data={
-                    'data': 'Some payment verification data\
- has not been transmitted.'}
+                data={'uuid': 'Invalid UUID.'},
+                status=status.HTTP_406_NOT_ACCEPTABLE
             )
-        contract = Contract.objects.get(customer_id=customer_id)
-        if not contract:
+        except Contract.DoesNotExist:
             return Response(
                 data={'uuid': f'The user with uuid {customer_id} has not\
- entered into any contracts.'}
+ entered into any contracts.'},
+                status=status.HTTP_404_NOT_FOUND
             )
-        else:
-            if contract.hashrate != count:
-                return Response(
-                    data={'uuid': f'The user with uuid {customer_id} has not\
- entered into any contracts.'}
-                )
+        if not contract or contract.is_paid:
+            return Response(
+                status=status.HTTP_204_NO_CONTENT
+            )
+        serializer = self.serializer_class(
+            data=request.data,
+            instance=contract
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(
+            status=status.HTTP_204_NO_CONTENT
+        )
