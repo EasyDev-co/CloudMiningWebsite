@@ -1,3 +1,4 @@
+from datetime import date
 from rest_framework import serializers, exceptions
 from src.application.models import Contract
 from src.application.api.v1.formulas import calculate_contract_price
@@ -46,6 +47,34 @@ class CreateContractSerizalizer(serializers.ModelSerializer):
             'contract_start',
             'contract_end'
         ]
+
+    def validate_contract_start(self, value):
+        contract_start = value
+        if contract_start < date.today():
+            raise exceptions.ValidationError(
+                detail='The contract start date cannot be in the past.'
+            )
+        return value
+
+    def validate_contract_end(self, value):
+        contract_end = value
+        if contract_end < date.today():
+            raise exceptions.ValidationError(
+                detail='The contract end date cannot be in the past.'
+            )
+        return value
+
+    def validate(self, attrs):
+        validated_data = super().validate(attrs)
+        contract_start = attrs.get('contract_start')
+        contract_end = attrs.get('contract_end')
+
+        if contract_start >= contract_end:
+            raise exceptions.ValidationError(
+                detail='The start date of the contract cannot be less than\
+ the end date of the contract.'
+            )
+        return validated_data
 
 
 class GetAllContractsSerizalizer(serializers.ModelSerializer):
